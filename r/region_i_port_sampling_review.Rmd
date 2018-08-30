@@ -1,0 +1,1975 @@
+---
+title: "Region I Port Sampling Review"
+subtitle: '`r format(Sys.Date(), "%B %d, %Y")`'
+author: "Jocelyn Runnebaum, Andrew Olson, and Leland Hulbert"
+output: 
+  word_document:
+    reference_docx: word-styles-reference.docx
+
+---
+
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message = FALSE, error=FALSE)
+```
+
+```{r, packages}
+
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(dplyr) #group_by()
+library(knitr)
+library(tidyr) #drop_na()
+library(png)
+library(grDevices)
+library(EnvStats)
+library(ggplot2)
+library(extrafont)
+# windowsFonts(Times=windowsFont("Calibri"))
+theme_sleek <- function(base_size = 12, base_family = "Calibri") {
+  half_line <- base_size/2
+  theme_light(base_size = 12, base_family = "Calibri") +
+    theme(
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.ticks.length = unit(half_line / 2.2, "pt"),
+      strip.background = element_rect(fill = NA, colour = NA),
+      strip.text.x = element_text(colour = "black"),
+      strip.text.y = element_text(colour = "black"),
+      # axis.text = element_text(colour = "grey30"),
+      #axis.title = element_text(colour = "grey30"),
+      #legend.title = element_text(colour = "grey30"),#, size = rel(0.9)
+      legend.title = element_blank(),
+      panel.border = element_rect(fill = NA),#, colour = "grey70", size = 1),
+      legend.key.size = unit(0.9, "lines"),
+      #legend.text = element_text(size = rel(0.7)),#, colour = "grey30"),
+      legend.key = element_rect(colour = NA, fill = NA),
+      legend.background = element_rect(colour = NA, fill = NA)#,
+      #plot.title = element_text(colour = "grey30"),#, size = rel(1),
+      #plot.subtitle = element_text(colour = "grey30")#, size = rel(.85),
+     
+      
+    )
+}
+
+theme_set(theme_sleek())
+
+options(scipen = 999) #turns off scientific notation
+```
+
+```{r global objects}
+FISCAL_YEAR <- 2019 #this is the fiscal year when new allocations would begin
+
+#these are the current years included to generate the average landings per port to calculate the proportion of GOA landings for use in allocations. CFEC gross earnings data are used for the calculations, but are not are one year behind. Therefore, the most current year available in CFEC is used for this analysis.
+AVGING_YEARS <- data.frame(2013, 2014, 2015, 2016, 2017)
+
+```
+
+
+```{r port_sampling_samples}
+samples <- read.csv("../data/Region_I/groundfish_ port_sampling_seak_2013_2017.csv")
+
+samples_all <- samples %>% 
+  mutate(year = as.factor(year)) %>% 
+  mutate(species_use = case_when(species_code == 110 ~ "cod",
+                                 species_code == 710 ~ "sablefish",
+                                 species_code == 130 ~ "lingcod",
+                                 species_code == 145 ~ "yelloweye",
+                                 species_code == 142 ~ "black_rockfish",
+                                 species_code == 212 ~ "hagfish",
+                                 species_code == 202 ~ "hagfish"))%>% 
+  group_by(year, mgmt_area, species_use) %>% 
+  summarise(samples = n()) %>% 
+  mutate(samples = as.numeric(samples)) 
+  
+ 
+#Cod Samples
+cod_samples <- samples_all %>%
+  filter(species_use == "cod") %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "NSEI" ~ 2750,
+                            mgmt_area == "NSEI" ~ 550)) %>% 
+  mutate(target = as.numeric(target))
+
+  
+#Sablefish Samples
+sablefish_samples <- samples_all %>%
+  filter(species_use == "sablefish") %>% 
+  droplevels() %>% 
+  filter(mgmt_area == "NSEI" | mgmt_area == "SSEI") %>% 
+  mutate(target = case_when(mgmt_area == "NSEI" ~ 1500,
+                            mgmt_area == "SSEI" ~ 550))
+
+
+#Lingcod Samples
+lingcod_samples <- samples_all %>%
+  filter(species_use == "lingcod") %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "IBS" ~ 550,
+                            mgmt_area == "EYKT" ~ 550,
+                            mgmt_area == "NSEO" ~ 550,
+                            mgmt_area == "CSEO" ~ 550,
+                            mgmt_area == "SSEOC" ~ 550,
+                            mgmt_area == "NSEI" ~ 550,
+                            mgmt_area == "SSEIW" ~ 550))
+  
+
+
+#Yelloweye Samples
+yelloweye_samples <- samples_all %>%
+  filter(species_use == "yelloweye") %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "EYKT" ~ 550,
+                            mgmt_area == "NSEO" ~ 550,
+                            mgmt_area == "CSEO" ~ 550,
+                            mgmt_area == "SSEO" ~ 550,
+                            mgmt_area == "NSEI" ~ 550,
+                            mgmt_area == "SSEI" ~ 550))
+
+ 
+#Black rockfish samples
+black_samples <- samples_all %>%
+  filter(species_use == "black_rockfish") %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "IBS" ~ 550,
+                            mgmt_area == "EYKT" ~ 550,
+                            mgmt_area == "NSEO" ~ 550,
+                            mgmt_area == "CSEO" ~ 550,
+                            mgmt_area == "SSEOC" ~ 550,
+                            mgmt_area == "NSEI" ~ 550,
+                            mgmt_area == "SSEIW" ~ 550))
+
+
+#Hagfish samples
+hagfish_samples <- samples_all %>%
+  filter(species_use == "hagfish") %>% 
+  droplevels() %>% 
+  mutate(target = 550)
+
+```
+
+#Introduction
+This is a summary of the port sampling program for Region I. The species included in this review and current port sampling goals were obtained from a questionnaire developed by Leland Hulbert. Andrew Olson completed the questionnaire on behalf of Region I. Many of the port sampling goals were established based on Carlile (2005). Sampling goals were set in 2010 for Pacific cod, 2006 for NSEI sablefish, 2009 for SSEI sablefish, 2009 for lingcod, 2011 for yelloweye rockfish, 2006 for black rockfish, and 2016 for hagfish. 
+
+Most of the port samping in Region I is conducted in the directed fisheries by two staff in Juneau, three staff in Sitka, three staff in Petersburg, and one staff in Ketchikan who samples SSEI sablefish and hagfish in addition to salmon and crab. On occasion a staff member from Juneau may go to Ketchikan to help with port sampling, particularly for hagfish.
+
+To evaluate potential data gaps, landings per fishery were evaluated as the geometric mean and the geomtric standard deviation by port for the recent most five years of complete data (`r AVGING_YEARS`) from the CFEC gross earnings file. The geometric standard deviation is a multiplicative factor to express the deviation from the mean (Kirkwood, 1979), the upper and lower limits expressed in each figure represent the range of landings by port over the past five years. Landings were evaluated by calendar year to match the each regions Annual Management Reporting cycle and the opening of many groundfish fisheries. Landings include directed fishery and bycatch fishery landings, fish reported as discarded at sea or for personal use were removed from all data for this region. Each fishery is described as the species, area, and fishery location (state waters, parallel, or throughout the exclusive economic zone). The general fisheries described below are the state-water Pacific cod, state-water sablefish, lingcod, black rockfish, yelloweye rockfish, and hagfish. Data were subset in OceanAK by species, selected fields can be found in the source code of this analysis.
+
+```{r map}
+map_path <- "../figures/"
+include_graphics(paste0(map_path,"Region_I/2018_Commercial_Groundfish_SE_Reporting_Areas.jpg"))
+```
+
+
+```{r, eval = FALSE}
+-date_landed                    
+-species_code  	                
+-species_name   
+-cfec_permit_fishery
+-mgmt_prgm_code  	              
+-harvest_description  	         
+-harvest_code  	                
+-management_area_district
+-se_lingcod_mgmt_area_district (for black rockfish and lingcod)
+-waters  
+-pounds  
+-delivery_code 
+-delivery_description 
+-disposition_code	 
+-disposition_description
+-port_code 
+-port_name
+```
+
+#State-Water Cod Fisheries
+```{r eval=FALSE}
+Species code = 110      
+Management program code = SMPC     
+Harvest Description = state managed groundfish    
+(The remaining gear types are hand troll, longline, mechanical jigs, non-pelagic bottom trawl, and pots)    
+Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)  
+```
+Pacific cod in the Eastern Gulf of Alaska Area are open from January 1 to December 31 unless closed by emergency order (5 AAC 28.115). Pacific cod in inside waters are managed with a Guideline Harvest Range and inseason management. The current sampling goal for NSEIPacific cod is 2750 Pacific cod,550 per area within NSEI, from Juneau where the majority of landings occur and the sampling goal for SSEI Pacific cod is 550 from Juneau. The two reference lines at 2750 and 550 indicate these sampling goals.
+
+```{r state_cod}
+#bring in State Cod data
+state_cod <- read.csv("../data/Region_I/pacific_cod.csv")
+state_cod <- state_cod %>% 
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 95 & disposition_code != 98) %>% 
+  # filter(mgmt_prgm_code == "SMPC") %>% 
+  filter(harvest_code == 80) %>% #harvest_description = state managed groundfish
+  droplevels()
+
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+#plot state-waters sampling data
+cod_samples_plot <- ggplot(data = cod_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 2750)+
+  geom_hline(yintercept = 550)+
+  ylim(0,3000) +
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Pacific Cod Port Sampling") 
+ggsave(plot = cod_samples_plot, file = paste0("../figures/Region_I/pcod_samples.png"))
+
+print(cod_samples_plot)
+```
+
+##Pacific Cod NSEI State Waters Fishery
+Pacific cod are managed by sub-region (not specificed in the regulations) to spatially distribute effort over the population. Miscellaneous finfish CFEC permits (category M) are considered the directed fisheries and sablefish (category C) and demersal shelf rockfish (DSR) (category Y) are considered bycatch fisheries.  Pacific cod can be kept as bait in other directed fisheries and weight is estimated on fishtickets, those data are not included as port samplers would not have access for sampling.
+
+```{r pcod_NSEI}
+pcod_nsei <- state_cod %>% 
+    filter(mgmt_area_district == "NSEI") %>% 
+    droplevels() %>% 
+    mutate(type = case_when(grepl("M ", cfec_permit_fishery) ~ "directed",
+         grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+         grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+         grepl("Y ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%   
+    mutate(type = ifelse(cfec_permit_fishery == "M 05G", "bycatch", type)) %>% 
+    select(year, port_code, type, pounds) %>% 
+    group_by(year, port_code, type) %>%
+    summarise_all(funs(sum)) %>%
+    group_by(port_code, type) %>%
+    summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+    mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+    dplyr::rename(mean_landed = geoMean) %>% 
+    mutate(mean_landed = round(mean_landed, 0)) %>% 
+    mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+    mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+    select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch  
+pcod_nsei_plot <- ggplot(data = pcod_nsei, aes(y = mean_landed, x = port_code, fill = type))+
+    geom_bar(position = position_dodge(), stat = "identity")+
+    geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+           width = 0.2, position = position_dodge(0.9))+
+    scale_y_continuous(breaks = round(seq(min(pcod_nsei$lower, na.rm = TRUE), 
+                                  max(pcod_nsei$upper, na.rm = TRUE), 
+                                  length.out = 10),0), 
+                    labels = scales::comma(round(seq(min(pcod_nsei$lower, na.rm = TRUE), 
+                                  max(pcod_nsei$upper, na.rm = TRUE), 
+                                  length.out = 10)),0))+
+    scale_fill_grey() +
+    scale_color_grey() +
+    ylab("Mean Harvest (lb)\n")+
+    xlab("Port Landed\n")+
+    ggtitle("NSEI Pacific Cod State-Waters Fishery")
+    
+ggsave(plot = pcod_nsei_plot, file = paste0("../figures/Region_I/pcod_nsei.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+
+# bycatch <- pcod_nsei %>% 
+#     filter(type == "bycatch") %>% 
+#     dplyr::rename(mean_bycatch = mean_landed,
+#            bycatch_upper = upper,
+#            bycatch_lower = lower) %>% 
+#     select(-type)
+# 
+# directed <- pcod_nsei %>% 
+#     filter(type == "directed") %>% 
+#      dplyr::rename(mean_directed = mean_landed,
+#            directed_upper = upper,
+#            directed_lower = lower) %>%
+#     select(-type)
+# pcod_nsei <- full_join(directed,  bycatch, by = "port_code")
+#   
+# kable(pcod_nsei, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(pcod_nsei_plot)
+```
+
+##Pacific Cod SSEI State-Waters Fishery
+There is no idrected fishery for Pacific cod in the SSEI. Category M CFEC permits are considered the directed fisheries and halibut (category B), C, and Y permits are considered bycatch fisheries.
+```{r pcod_SSEI, include = FALSE}
+
+pcod_ssei <- state_cod %>% 
+    filter(mgmt_area_district == "SSEI") %>% 
+    droplevels() %>% 
+    mutate(type = case_when(grepl("M ", cfec_permit_fishery) ~ "directed",
+         grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+         grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+         grepl("Y ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>% 
+    mutate(type = ifelse(cfec_permit_fishery == "M 05G", "bycatch", type)) %>% 
+    select(year, port_code, type, pounds) %>% 
+    group_by(year, port_code, type) %>%
+    summarise_all(funs(sum)) %>%
+    group_by(port_code, type) %>%
+    summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+    mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+    dplyr::rename(mean_landed = geoMean) %>% 
+    mutate(mean_landed = round(mean_landed, 0)) %>% 
+    mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+    mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+    select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+pcod_ssei_plot <- ggplot(data = pcod_ssei, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(pcod_ssei$lower, na.rm = TRUE), 
+                                        max(pcod_ssei$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(pcod_ssei$lower, na.rm = TRUE), 
+                                                      max(pcod_ssei$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lb)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("SSEI Pacific Cod State-Waters Fishery")
+
+ggsave(plot = pcod_ssei_plot, file = paste0("../figures/Region_I/pcod_ssei.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- pcod_ssei %>%
+#     filter(type == "bycatch") %>%
+#     dplyr::rename(mean_bycatch = mean_landed,
+#            bycatch_upper = upper,
+#            bycatch_lower = lower) %>%
+#     select(-type)
+# 
+# directed <- pcod_ssei %>%
+#     filter(type == "directed") %>%
+#      dplyr::rename(mean_directed = mean_landed,
+#            directed_upper = upper,
+#            directed_lower = lower) %>%
+#     select(-type)
+# pcod_ssei <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(pcod_ssei, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(pcod_ssei_plot)
+```
+
+#Sablefish State Waters Fishery 
+```{r eval=FALSE}
+Species code = 710 
+Management program code = SMS, test fishery is removed
+Harvest Description = state managed groundfish (80) 
+Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)  
+```
+
+```{r sablefish}
+sablefish <- read.csv("../data/Region_I/region1_sablefish.csv")
+sablefish <- sablefish %>% 
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>=7, year + 1, year)) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 95 & disposition_code != 98) %>%
+  droplevels()
+  # filter(harvest_code == 80)
+
+```
+
+The sampling objective for NSEI sablefish is 500 fish each for Sitka, Juneau, and Petersburg. The sampling goal for SSEI sablefish is 550 fish for Juneau and Ketchikan each. The reference line at 1500 indicates the cumulative sampling goal for the NSEI and the reference line at 550 indicates the sampling goal for SSEI.
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+sablefish_samples_plot <- ggplot(data = sablefish_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 1500)+
+  geom_hline(yintercept = 550)+
+  ylim(0,1500) +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Sablefish Port Sampling")
+
+ggsave(plot = sablefish_samples_plot, file = paste0("../figures/Region_I/sablefish_samples.png"))
+
+print(sablefish_samples_plot)
+```
+
+##Sablefish NSEI State-Waters Fishery
+Landings represent direct harvest of sablefish from the longline fishery only (C61A CFEC permits), bycatch of sablefish is not permissible in state waters. The NSEI sablefish fishery is open August 15 to November 15. 
+```{r sablefish NSEI, include = FALSE}
+#there should only be ifq landings for sablefish in nsei
+sablefish_nsei <- sablefish %>% 
+    filter(mgmt_area == "NSEI") %>% 
+    filter(mgmt_prgm_code == "SMS") %>% #this results in only CFEC permit fishery = C61A northern southeast longline
+    droplevels() %>% 
+    select(year, port_code, pounds) %>% 
+    group_by(year, port_code) %>%
+    summarise_all(funs(sum)) %>%
+    group_by(port_code) %>%
+    summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+    dplyr::rename(mean_landed = geoMean) %>% 
+    mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+    mutate(mean_landed = round(mean_landed, 0)) %>% 
+    mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+    mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+    select(-c(geoSD))
+  
+sablefish_nsei_plot <- ggplot(data = sablefish_nsei, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(sablefish_nsei$lower, na.rm = TRUE), 
+                                        max(sablefish_nsei$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(sablefish_nsei$lower, na.rm = TRUE), 
+                                                      max(sablefish_nsei$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() +  
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("NSEI Sablefish State Waters Fishery")
+
+ggsave(plot = sablefish_nsei_plot, file = paste0("../figures/Region_I/sablefish_nsei.png"))
+
+# kable(sablefish_nsei, col.names = c("Port", "Mean Landings (lbs)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(sablefish_nsei_plot)
+```
+
+##Sablefish SSEI State Waters Fishery 
+Landings represent salefish harvested under the IFQ pot and longline fisheries only, bycatch of sablefish is not permissible in state waters. The SSEI sablefish fishery was open June 1 to August 15 with longline gear and September 1 to November 15 with pot gear. The SSEI directed sablefish fishery no longer separates seasons by gear type and the longline and pot seasons are a combined season from June 1 to November 15. The is only one floating catcher processor (the F/V Kruzof) for sablefish in Region I and is located in Seward. In January 2018 the Board of Fish allowed for the live sale of sablefish. Region I is in the process of developing a protocol for live sampling. 
+```{r sablefish SSEI}
+#there should only be ifq landings for sablefish in ssei
+sablefish_ssei <- sablefish %>% 
+    filter(mgmt_area == "SSEI") %>% 
+    filter(mgmt_prgm_code == "SMS") %>% #this results in only CFEC permit fishery = C61C northern southeast longline and C91C southern southeast potgear
+    droplevels() %>% 
+    select(year, port_code, pounds) %>% 
+    group_by(year, port_code) %>%
+    summarise_all(funs(sum)) %>%
+    group_by(port_code) %>%
+    summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+    dplyr::rename(mean_landed = geoMean) %>% 
+    mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+    mutate(mean_landed = round(mean_landed, 0)) %>% 
+    mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+    mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+    select(-c(geoSD))
+  
+sablefish_ssei_plot <- ggplot(data = sablefish_ssei, aes(y = mean_landed, x = port_code))+
+    geom_bar(position = position_dodge(), stat = "identity")+
+    geom_errorbar(aes(ymin = upper, ymax = lower),
+           width = 0.2, position = position_dodge(0.9))+
+    scale_y_continuous(breaks = round(seq(min(sablefish_ssei$lower, na.rm = TRUE), 
+                                  max(sablefish_ssei$upper, na.rm = TRUE), 
+                                  length.out = 10),0), 
+                    labels = scales::comma(round(seq(min(sablefish_ssei$lower, na.rm = TRUE), 
+                                  max(sablefish_ssei$upper, na.rm = TRUE), 
+                                 length.out = 10)),0))+
+    scale_fill_grey() + 
+    scale_color_grey() +
+    ylab("Mean Harvest (lbs)\n")+
+    xlab("Port Landed\n")+
+    ggtitle("SSEI Sablefish State Waters Fishery")
+
+ggsave(plot = sablefish_ssei_plot, file = paste0("../figures/Region_I/sablefish_ssei.png"))
+
+# kable(sablefish_ssei, col.names = c("Port", "Mean Landings (lbs)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(sablefish_ssei_plot)
+```
+
+#Lingcod (0-200 nmi)
+
+```{r eval=FALSE}
+Species code = 130
+Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)  
+```
+
+```{r lingcod}
+lingcod <- read.csv("../data/Region_I/regionI_lingcod.csv") 
+lingcod <- lingcod %>%   
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 95 & disposition_code != 98)
+
+```
+
+The port sampling goal for IBS, EYKT, NSEO, CSEO, SSEOC, NSEI, SSEIW 550 each, as indicated by the reference line.
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+lingcod_samples_plot <- ggplot(data = lingcod_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,600) +
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Lingcod Port Sampling") 
+
+ggsave(plot = lingcod_samples_plot, file = paste0("../figures/Region_I/lingcod_samples.png"))
+
+print(lingcod_samples_plot)
+```
+
+##Lingcod IBS 
+Category I CFEC permits are considered the directed fisheries and category B, C, and M permits are considered bycatch fisheries.
+```{r lingcod_ibs, include = FALSE}
+lingcod_ibs <- lingcod %>% 
+  filter(se_lingcod_mgmt_area == "L_IBS") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("I ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+lingcod_ibs_plot <- ggplot(data = lingcod_ibs, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(lingcod_ibs$lower, na.rm = TRUE), 
+                                        max(lingcod_ibs$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(lingcod_ibs$lower, na.rm = TRUE), 
+                                                      max(lingcod_ibs$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Lingcod IBS Fishery")
+
+ggsave(plot = lingcod_ibs_plot, file = paste0("../figures/Region_I/lingcod_ibs.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- lingcod_ibs %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- lingcod_ibs %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# lingcod_ibs <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(lingcod_ibs, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(lingcod_ibs_plot)
+```
+
+##Lingcod EYKT
+Lingcod CFEC permits (category I) are considered the directed fisheries and category B, C, M, Y, and salmon (S) permits are considered bycatch fisheries.
+```{r lingcod_eykt}
+lingcod_eykt <- lingcod %>% 
+  filter(se_lingcod_mgmt_area == "L_EYKT") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("I ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("Y ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+lingcod_eykt_plot <- ggplot(data = lingcod_eykt, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(lingcod_eykt$lower, na.rm = TRUE), 
+                                        max(lingcod_eykt$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(lingcod_eykt$lower, na.rm = TRUE), 
+                                                      max(lingcod_eykt$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Lingcod EYKT Fishery")
+
+ggsave(plot = lingcod_eykt_plot, file = paste0("../figures/Region_I/lingcod_eykt.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- lingcod_eykt %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- lingcod_eykt %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# lingcod_eykt <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(lingcod_eykt, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(lingcod_eykt_plot)
+```
+
+##Lingcod NSEO
+Category I CFEC permits are considered the directed fisheries and category B, C, M, Y, and S permits are considered bycatch fisheries.
+```{r lingcod_nseo, include = FALSE}
+lingcod_nseo <- lingcod %>% 
+  filter(se_lingcod_mgmt_area == "L_NSEO") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("I ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("Y ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+lingcod_nseo_plot <- ggplot(data = lingcod_nseo, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(lingcod_nseo$lower, na.rm = TRUE), 
+                                        max(lingcod_nseo$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(lingcod_nseo$lower, na.rm = TRUE), 
+                                                      max(lingcod_nseo$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Lingcod NSEO Fishery")
+
+ggsave(plot = lingcod_nseo_plot, file = paste0("../figures/Region_I/lingcod_nseo.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- lingcod_nseo %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- lingcod_nseo %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# lingcod_nseo <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(lingcod_nseo, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(lingcod_nseo_plot)
+```
+
+##Lingcod CSEO
+Category I CFEC permits are considered the directed fisheries and category B, C, M, Y, and S permits are considered bycatch fisheries. 
+```{r lingcod_cseo}
+lingcod_cseo <- lingcod %>% 
+  filter(se_lingcod_mgmt_area == "L_CSEO") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("I ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("Y ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+lingcod_cseo_plot <- ggplot(data = lingcod_cseo, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(lingcod_cseo$lower, na.rm = TRUE), 
+                                        max(lingcod_cseo$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(lingcod_cseo$lower, na.rm = TRUE), 
+                                                      max(lingcod_cseo$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Lingcod CSEO Fishery")
+  ggsave(lingcod_cseo_plot, file = paste0("../figures/Region_I/lingcod_cseo.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- lingcod_cseo %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- lingcod_cseo %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# lingcod_cseo <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(lingcod_cseo, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(lingcod_cseo_plot)
+```
+
+##Lingcod SSEOC
+Category I CFEC permits are considered the directed fisheries and category B, M, Y, and S permits are considered bycatch fisheries.
+```{r lingcod_sseoc}
+lingcod_sseoc <- lingcod %>% 
+  filter(se_lingcod_mgmt_area == "L_SSEOC") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("I ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("Y ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+
+lingcod_sseoc_plot <- ggplot(data = lingcod_sseoc, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(lingcod_sseoc$lower, na.rm = TRUE), 
+                                        max(lingcod_sseoc$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(lingcod_sseoc$lower, na.rm = TRUE), 
+                                                      max(lingcod_sseoc$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Lingcod SSEOC Fishery")
+
+ggsave(plot = lingcod_sseoc_plot, file = paste0("../figures/Region_I/lingcod_sseoc.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- lingcod_sseoc %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- lingcod_sseoc %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# lingcod_sseoc <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(lingcod_sseoc, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(lingcod_sseoc_plot)
+```
+
+
+##Lingcod NSEI
+Category I CFEC permits are considered the directed fisheries and category B, C, M, Y, and S permits are considered bycatch fisheries.
+```{r lingcod_nsei}
+lingcod_nsei <- lingcod %>% 
+  filter(se_lingcod_mgmt_area == "L_NSEI") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("I ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("Y ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+lingcod_nsei_plot <- ggplot(data = lingcod_nsei, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(lingcod_nsei$lower, na.rm = TRUE), 
+                                        max(lingcod_nsei$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(lingcod_nsei$lower, na.rm = TRUE), 
+                                                      max(lingcod_nsei$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Lingcod NSEI Fishery")
+
+ggsave(plot = lingcod_nsei_plot, file = paste0("../figures/Region_I/lingcod_nsei.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- lingcod_nsei %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- lingcod_nsei %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# lingcod_nsei <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(lingcod_nsei, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(lingcod_nsei_plot)
+```
+
+##Lingcod SSEIW
+Lingcod landed in Metlakala do not have a CFEC permit fishery code assigned because they are outside the jursidiction of the State. Category I CFEC permits are considered the directed fisheries and category B, M, Y, and S permits are considered bycatch fisheries.
+```{r lingcod_sseiw}
+lingcod_sseiw <- lingcod %>% 
+  filter(se_lingcod_mgmt_area == "L_SSEIW") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("I ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("Y ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%
+  mutate(type = ifelse(is.na(type), "Metlakatla", type)) %>% 
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+lingcod_sseiw_plot <- ggplot(data = lingcod_sseiw, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(lingcod_sseiw$lower, na.rm = TRUE), 
+                                        max(lingcod_sseiw$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(lingcod_sseiw$lower, na.rm = TRUE), 
+                                                      max(lingcod_sseiw$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Lingcod SSEIW Fishery")
+
+ggsave(plot = lingcod_sseiw_plot, file = paste0("../figures/Region_I/lingcod_sseiw.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- lingcod_sseiw %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- lingcod_sseiw %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# lingcod_sseiw <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(lingcod_sseiw, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(lingcod_sseiw_plot)
+```
+
+
+#Yelloweye Rockfish (0-200 nmi)
+
+```{r eval=FALSE}
+Species code = 145  
+Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)  
+```
+
+```{r yelloweye}
+yelloweye <- read.csv("../data/Region_I/region1_yelloweye.csv") 
+yelloweye <- yelloweye %>%   
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 95 & disposition_code != 98)
+
+```
+
+The sampling goal for EYKT, NSEO, CSEO, SSEO, NSEI, SSEI is 550 fish each, as indicated by the reference line.
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+yelloweye_samples_plot <- ggplot(data = yelloweye_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,1500)+
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Yelloweye Port Sampling")
+
+ggsave(plot = yelloweye_samples_plot, file = paste0("../figures/Region_I/yelloweye_samples.png"))
+print(yelloweye_samples_plot)
+```
+
+##Yelloweye Rockfish EYKT
+The majority of the samples are collected as bycatch from other fisheries, making it difficult to attain the sampling goal some years. The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, I, and M category permits are considered fisheries where yelloweye are caught as bycatch. 
+```{r yelloweye_eykt}
+yelloweye_eykt <- yelloweye %>% 
+  filter(mgmt_area== "EYKT") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("Y ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("I ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+yelloweye_eykt_plot <- ggplot(data = yelloweye_eykt, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(yelloweye_eykt$lower, na.rm = TRUE), 
+                                        max(yelloweye_eykt$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(yelloweye_eykt$lower, na.rm = TRUE), 
+                                                      max(yelloweye_eykt$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("EYKT Yelloweye Rockfish Fishery")
+
+ggsave(plot = yelloweye_eykt_plot, file = paste0("../figures/Region_I/yelloweye_eykt.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- yelloweye_eykt %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- yelloweye_eykt %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# yelloweye_eykt <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(yelloweye_eykt, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(yelloweye_eykt_plot)
+```
+
+##Yelloweye Rockfish NSEO
+This is a bycatch only fishery from B, C, I, and M category permits. 
+```{r yelloweye_nseo}
+yelloweye_nseo <- yelloweye %>% 
+  filter(mgmt_area== "NSEO") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(#grepl("Y ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("I ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+yelloweye_neso_plot <- ggplot(data = yelloweye_nseo, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(yelloweye_nseo$lower, na.rm = TRUE), 
+                                        max(yelloweye_nseo$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(yelloweye_nseo$lower, na.rm = TRUE), 
+                                                      max(yelloweye_nseo$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("NSEO Yelloweye Rockfish Fishery")
+
+ggsave(plot = yelloweye_neso_plot, file = paste0("../figures/Region_I/yelloweye_nseo.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- yelloweye_nseo %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- yelloweye_nseo %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# yelloweye_nseo <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(yelloweye_nseo, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(yelloweye_neso_plot)
+```
+
+##Yelloweye Rockfish CSEO
+The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, I, and M category permits are considered fisheries where yelloweye are caught as bycatch. The directed landings in Sitka occured in 2013. 
+```{r yelloweye_cseo}
+yelloweye_cseo <- yelloweye %>% 
+  filter(mgmt_area== "CSEO") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("Y ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("I ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+yelloweye_cseo_plot <- ggplot(data = yelloweye_cseo, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(yelloweye_cseo$lower, na.rm = TRUE), 
+                                        max(yelloweye_cseo$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(yelloweye_cseo$lower, na.rm = TRUE), 
+                                                      max(yelloweye_cseo$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("CSEO Yelloweye Rockfish Fishery")
+
+ggsave(plot = yelloweye_cseo_plot, file = paste0("../figures/Region_I/yelloweye_cseo.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- yelloweye_cseo %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- yelloweye_cseo %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# yelloweye_cseo <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(yelloweye_cseo, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(yelloweye_cseo_plot)
+```
+
+##Yelloweye Rockfish SSEO
+The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, I, and M category permits are fisheries where yelloweye are caught as bycatch. Directed landings in Craig and Sitka occured in 2013.
+```{r yelloweye_sseo}
+yelloweye_sseo <- yelloweye %>% 
+  filter(mgmt_area== "SSEO") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("Y ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("I ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+yelloweye_sseo_plot <- ggplot(data = yelloweye_sseo, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(yelloweye_sseo$lower, na.rm = TRUE), 
+                                        max(yelloweye_sseo$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(yelloweye_sseo$lower, na.rm = TRUE), 
+                                                      max(yelloweye_sseo$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed")+
+  ggtitle("SSEO Yelloweye Rockfish Fishery\n")
+
+ggsave(plot = yelloweye_sseo_plot, file = paste0("../figures/Region_I/yelloweye_sseo.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- yelloweye_sseo %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- yelloweye_sseo %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# yelloweye_sseo <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(yelloweye_sseo, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(yelloweye_sseo_plot)
+```
+
+##Yelloweye Rockfish NSEI
+The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, and M category permits are fisheries where yelloweye are caught as bycatch. 
+```{r yelloweye_nsei}
+yelloweye_nsei <- yelloweye %>% 
+  filter(mgmt_area== "NSEI") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("Y ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          # grepl("I ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%    
+  mutate(type = ifelse(is.na(type), "Metlakatla", type)) %>%
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+yelloweye_nsei_plot <- ggplot(data = yelloweye_nsei, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(yelloweye_nsei$lower, na.rm = TRUE), 
+                                        max(yelloweye_nsei$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(yelloweye_nsei$lower, na.rm = TRUE), 
+                                                      max(yelloweye_nsei$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("NSEI Yelloweye Rockfish Fishery")
+
+ggsave(plot = yelloweye_nsei_plot, file = paste0("../figures/Region_I/yelloweye_nsei.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- yelloweye_nsei %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- yelloweye_nsei %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# yelloweye_nsei <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(yelloweye_nsei, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(yelloweye_nsei_plot)
+```
+
+
+##Yelloweye Rockfish SSEI
+The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, and M category permits are fisheries where yelloweye are caught as bycatch. Metlakatla is under a special permit.
+```{r yelloweye_ssei}
+yelloweye_ssei <- yelloweye %>% 
+  filter(mgmt_area== "SSEI") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("Y ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("I ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  mutate(type = ifelse(is.na(type), "Metlakatla", type)) %>% 
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+yelloweye_ssei_plot <- ggplot(data = yelloweye_ssei, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(yelloweye_ssei$lower, na.rm = TRUE), 
+                                        max(yelloweye_ssei$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(yelloweye_ssei$lower, na.rm = TRUE), 
+                                                      max(yelloweye_ssei$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("NSEI Yelloweye Rockfish Fishery")
+
+ggsave(plot = yelloweye_ssei_plot, file = paste0("../figures/Region_I/yelloweye_ssei.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- yelloweye_ssei %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- yelloweye_ssei %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# yelloweye_ssei <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(yelloweye_ssei, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(yelloweye_ssei_plot)
+```
+
+#Black Rockfish (0-200 nmi)
+```{r eval=FALSE}
+Species code = 142
+Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)  
+```
+
+```{r black}
+black <- read.csv("../data/Region_I/region1_black_rockfish.csv") 
+black <- black %>%   
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 95 & disposition_code != 98)
+
+```
+
+The sampling goal for IBS, EYKT, NSEO, CSEO, and SSEOC is 550 fish each, as indicated by the reference line. There are no port sampling goals for NSEI or SSEI management districts.
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+black_samples_plot <- ggplot(data = black_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,1500) +
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Black Rockfish Port Sampling")
+
+ggsave(plot = black_samples_plot, file = paste0("../figures/Region_I/black_rockfish_samples.png"))
+
+print(black_samples_plot)
+```
+
+##Black Rockfish IBS
+This is a bycatch fisheries, with infrequent landings in areas without ADF&G staff available for sampling. This is a bycatch only fishery; B, and C category permits are fisheries where black rockfish are caught as bycatch. 
+```{r black_ibs}
+black_ibs <- black %>% 
+  filter(se_lingcod_mgmt_area== "L_IBS") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+black_ibs_plot <- ggplot(data = black_ibs, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(black_ibs$lower, na.rm = TRUE), 
+                                        max(black_ibs$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(black_ibs$lower, na.rm = TRUE), 
+                                                      max(black_ibs$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("L_IBS Black Rockfish Fishery")
+
+ggsave(plot = black_ibs_plot, file = paste0("../figures/Region_I/black_rf_ibs.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- black_ibs %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- black_ibs %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# black_ibs <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(black_ibs, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(black_ibs_plot)
+```
+
+##Black Rockfish EYKT
+The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, and I category permits are fisheries where black rockfish are caught as bycatch. 
+```{r black_eykt, include = FALSE}
+black_eykt <- black %>% 
+  filter(se_lingcod_mgmt_area== "L_EYKT") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("Y ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("I ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+black_eykt_plot <- ggplot(data = black_eykt, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(black_eykt$lower, na.rm = TRUE), 
+                                        max(black_eykt$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(black_eykt$lower, na.rm = TRUE), 
+                                                      max(black_eykt$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("L_EYKT Black Rockfish Fishery")
+
+ggsave(plot = black_eykt_plot, file = paste0("../figures/Region_I/black_rf_eykt.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- black_eykt %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- black_eykt %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# black_eykt <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(black_eykt, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(black_eykt_plot)
+```
+
+##Black Rockfish NSEO
+This is a bycatch only fishery; B, C, I, and M category permits are fisheries where black rockfish are caught as bycatch. 
+```{r black_nseo, include = FALSE}
+black_nseo <- black %>% 
+  filter(se_lingcod_mgmt_area== "L_NSEO") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("I ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch"))%>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+black_nseo_plot <- ggplot(data = black_nseo, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(black_nseo$lower, na.rm = TRUE), 
+                                        max(black_nseo$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(black_nseo$lower, na.rm = TRUE), 
+                                                      max(black_nseo$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("L_NSEO Black Rockfish Fishery")
+
+ggsave(plot = black_nseo_plot, file = paste0("../figures/Region_I/black_rf_nseo.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- black_nseo %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- black_nseo %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# black_nseo <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(black_nseo, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(black_nseo_plot)
+```
+
+##Black Rockfish CSEO
+The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, I, and M category permits are fisheries where black rockfish are caught as bycatch. Directed fishery landings occured in 2013.
+```{r black_cseo, include = FALSE}
+black_cseo <- black %>% 
+  filter(se_lingcod_mgmt_area== "L_CSEO") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("Y ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("I ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch"))%>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+black_cseo_plot <- ggplot(data = black_cseo, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(black_cseo$lower, na.rm = TRUE), 
+                                        max(black_cseo$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(black_cseo$lower, na.rm = TRUE), 
+                                                      max(black_cseo$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("L_CSEO Black Rockfish Fishery")
+
+ggsave(plot = black_cseo_plot, file = paste0("../figures/Region_I/black_rf_cseo.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- black_cseo %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- black_cseo %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# black_cseo <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(black_cseo, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(black_cseo_plot)
+```
+
+##Black Rockfish SSEOC 
+The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, I, and M category permits are fisheries where black rockfish are caught as bycatch. Directed fishery landings occured in 2017.
+```{r black_sseo, include = FALSE}
+black_sseoc <- black %>% 
+  filter(se_lingcod_mgmt_area== "L_SSEOC") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("Y ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("I ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch"))%>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+black_sseoc_plot <- ggplot(data = black_sseoc, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(black_sseoc$lower, na.rm = TRUE), 
+                                        max(black_sseoc$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(black_sseoc$lower, na.rm = TRUE), 
+                                                      max(black_sseoc$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("L_SSEOC Black Rockfish Fishery")
+
+ggsave(plot = black_sseoc_plot, file = paste0("../figures/Region_I/black_rf_sseoc.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- black_sseoc %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- black_sseoc %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# black_sseoc <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(black_sseoc, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(black_sseoc_plot)
+```
+
+##Black Rockfish NSEI **(Closed Fishery)**
+The State has landings obligations for black rockfish and no directed fishery has been established for black rockfish in this management area. However, there are Commissioner's permits that have been previously issued that account for the directed landings.Category B, C, I, and M permits are fisheries where black rockfish are caught as bycatch.  The last directed landings were in Craig, AK in 2013.
+```{r black_nsei}
+black_nsei <- black %>% 
+  filter(se_lingcod_mgmt_area== "L_NSEI") %>% 
+  droplevels() %>% 
+  mutate(type = case_when(grepl("Y ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch"))%>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+black_nsei_plot <- ggplot(data = black_nsei, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(black_nsei$lower, na.rm = TRUE), 
+                                        max(black_nsei$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(black_nsei$lower, na.rm = TRUE), 
+                                                      max(black_nsei$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("L_NSEI Black Rockfish Fishery (Closed Fishery)")
+
+ggsave(plot = black_nsei_plot, file = paste0("../figures/Region_I/black_nsei.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- black_nsei %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- black_nsei %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# black_nsei <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(black_nsei, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(black_nsei_plot)
+```
+
+##Black Rockfish SSEIW **(Closed Fishery)**
+The State has landings obligations for black rockfish and no directed fishery has been established for black rockfish in this management area. However, there are Commissioner's permits that have been previously issued that account for the directed landings. Category B, C, I, and M permits are fisheries where black rockfish are caught as bycatch. The last directed landings in Ketchican, AK were in 2015. No bycatch landings were made in 2017.
+```{r black_ssei}
+black_sseiw <- black %>% 
+  filter(se_lingcod_mgmt_area== "L_SSEIW") %>% 
+  filter(mgmt_program_code == "SMO" | mgmt_program_code == "IFQ") %>%
+  droplevels() %>% 
+  mutate(type = case_when(grepl("Y ", cfec_permit_fishery) ~ "directed",
+                          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
+                          grepl("M ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch"))%>%      
+  select(year, port_code, type, pounds) %>% 
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch
+black_sseiw_plot <- ggplot(data = black_sseiw, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(black_sseiw$lower, na.rm = TRUE), 
+                                        max(black_sseiw$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(black_sseiw$lower, na.rm = TRUE), 
+                                                      max(black_sseiw$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("L_SSEIW Black Rockfish Fishery (Closed Fishery)")
+
+ggsave(plot = black_sseiw_plot, file = paste0("../figures/Region_I/black_sseiw.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- black_sseiw %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- black_sseiw %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# black_sseiw <- full_join(directed,  bycatch, by = "port_code")
+# 
+# kable(black_sseiw, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(black_sseiw_plot)
+```
+
+#State-Water Hagfish
+```{r eval=FALSE}
+Species code = 212 and 202   
+Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)    
+```
+There are two species of hagfish that are recorded by ADF&G, Pacific hagfish (212) and black hagfish (202). Black hagfish is the predominant species caught in SEAK and the code was added late in 2016. Prior to this everything was coded as 212 Pacific hagfish even though this is most likely the incorrect species. Since 2016, hagfish have been prosecuted in state-waters by two individuals in the spring and fall with a Commissioner's permit. During peak landings port samplers from Juneau, trained at hagfish identification, will go to Ketchikan to sample the directed fishery. The current sampling goal is 550 fish from Ketchikan. Bycatch of Pacific hagfish are in SMO and RPP fisheries. 
+```{r hagfish}
+
+hagfish <- read.csv("../data/Region_I/region1_hagfish.csv")
+
+hagfish <- hagfish %>% 
+    mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>=7, year + 1, year)) %>% 
+    filter(year %in% AVGING_YEARS) %>% 
+    filter(waters == "STATE") %>% 
+    filter(disposition_code != 95 & disposition_code != 98) %>%
+    droplevels() %>% 
+    mutate(type = case_when(grepl("CPF", mgmt_prgm_code) ~ "directed",
+                          grepl("SMO", mgmt_prgm_code, ignore.case = TRUE) ~ "bycatch",
+                          grepl("RPP", mgmt_prgm_code, ignore.case = TRUE) ~ "bycatch"))%>%
+    select(year, port_code, type, pounds) %>% 
+    group_by(year, port_code, type) %>%
+    summarise_all(funs(sum)) %>%
+    group_by(port_code, type) %>%
+    summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+    mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+    dplyr::rename(mean_landed = geoMean) %>% 
+    mutate(mean_landed = round(mean_landed, 0)) %>% 
+    mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+    mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+    select(-c(geoSD))
+  
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+# bycatch <- hagfish %>% 
+#   filter(type == "bycatch") %>% 
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>% 
+#   select(-type)
+# 
+# directed <- hagfish %>% 
+#   filter(type == "directed") %>% 
+#   dplyr::rename(mean_directed = mean_landed,
+#                 directed_upper = upper,
+#                 directed_lower = lower) %>%
+#   select(-type)
+# hagfish <- full_join(directed,  bycatch, by = "port_code")
+
+# kable(hagfish, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+The the reference line at 550 indicates the sampling goal for all State waters in Souteast.
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+
+hagfish_samples_plot <- ggplot(data = hagfish_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,1500)+
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples")+
+  xlab("Year")+
+  ggtitle("Hagfish Port Sampling") 
+
+ggsave(plot = hagfish_samples_plot, file = paste0("../figures/Region_I/hag_samples.png"))
+
+print(hagfish_samples_plot)
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+
+hagfish_plot <- ggplot(data = hagfish, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(hagfish$lower, na.rm = TRUE), 
+                                        max(hagfish$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(hagfish$lower, na.rm = TRUE), 
+                                                      max(hagfish$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() + 
+  scale_color_grey() +
+  ylab("Mean Harvest (lbs)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Black Hagfish Directed Fishery and Pacific Hagfish Bycatch")
+
+ggsave(plot = hagfish_plot, file = paste0("../figures/Region_I/hagfish.png"))
+
+print(hagfish_plot)
+```
