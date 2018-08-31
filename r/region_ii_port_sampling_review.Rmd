@@ -1,0 +1,1325 @@
+---
+title: "Region II Port Sampling Review"
+subtitle: '`r format(Sys.Date(), "%B %d, %Y")`'
+author: "Jocelyn Runnebaum, Elisa Russ, and Leland Hulbert"
+contact: "jocelyn.runnebaum@alaska.gov"
+output: 
+  word_document:
+    reference_docx: word-styles-reference.docx
+---
+
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message = FALSE, error=FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(dplyr) #group_by()
+library(knitr)
+library(tidyr) #drop_na()
+library(png)
+library(grDevices)
+library(EnvStats)
+library(ggplot2)
+library(extrafont)
+# windowsFonts(Times=windowsFont("Calibri"))
+theme_sleek <- function(base_size = 12, base_family = "Calibri") {
+  half_line <- base_size/2
+  theme_light(base_size = 12, base_family = "Calibri") +
+    theme(
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.ticks.length = unit(half_line / 2.2, "pt"),
+      strip.background = element_rect(fill = NA, colour = NA),
+      strip.text.x = element_text(colour = "black"),
+      strip.text.y = element_text(colour = "black"),
+      # axis.text = element_text(colour = "grey30"),
+      #axis.title = element_text(colour = "grey30"),
+      #legend.title = element_text(colour = "grey30"),#, size = rel(0.9)
+      legend.title = element_blank(),
+      panel.border = element_rect(fill = NA),#, colour = "grey70", size = 1),
+      legend.key.size = unit(0.9, "lines"),
+      #legend.text = element_text(size = rel(0.7)),#, colour = "grey30"),
+      legend.key = element_rect(colour = NA, fill = NA),
+      legend.background = element_rect(colour = NA, fill = NA)#,
+      #plot.title = element_text(colour = "grey30"),#, size = rel(1)
+      #plot.subtitle = element_text(colour = "grey30")#, size = rel(.85)
+    )
+}
+
+theme_set(theme_sleek())
+
+options(scipen = 999) #turns off scientific notation
+
+```
+
+```{r global objects}
+FISCAL_YEAR <- 2019 #this is the fiscal year when new allocations would begin
+
+#these are the current years included to generate the average landings per port to calculate the proportion of GOA landings for use in allocations. CFEC gross earnings data are used for the calculations, but are not are one year behind. Therefore, the most current year available in CFEC is used for this analysis.
+AVGING_YEARS <- data.frame(2013, 2014, 2015, 2016, 2017)
+```
+
+```{r sampling data}
+samples <- read.csv("../data/Region_II/region_ii_samples.csv")
+
+samples <- samples %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  mutate(year = as.factor(year))
+
+#Cod Samples
+cod_samples <- samples %>%
+  filter(species_code == 110) %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "PWS" ~ 550,
+                            mgmt_area == "CI" ~ 550)) %>% 
+  mutate(target = as.numeric(target))
+
+#Pollock Samples
+pollock_samples <- samples %>%
+  filter(species_code == 270) %>% 
+  droplevels() %>%
+  mutate(target = case_when(mgmt_area == "PWS" ~ 550,
+                            mgmt_area == "CI" ~ 0))
+
+
+#Sablefish Samples
+sablefish_samples <- samples %>%
+  filter(species_code == 710) %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "PWS" ~ 550,
+                            mgmt_area == "CI" ~ 550))
+
+#Lingcod Samples
+lingcod_samples <- samples %>%
+  filter(species_code == 130) %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "PWS" ~ 550,
+                            mgmt_area == "CI" ~ 550))
+
+#Black rockfish samples
+black_samples <- samples %>%
+  filter(species_code == 142) %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "PWS" ~ 550,
+                            mgmt_area == "CI" ~ 0))
+
+#Yelloweye Samples
+yelloweye_samples <- samples %>%
+  filter(species_code == 145) %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "PWS" ~ 550,
+                            mgmt_area == "CI" ~ 550))
+
+#Quillback Samples
+quillback_samples <- samples %>%
+  filter(species_code == 147) %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "PWS" ~ 550,
+                            mgmt_area == "CI" ~ 550))
+
+#Rougheye Samples
+rougheye_samples <- samples %>%
+  filter(species_code == 151) %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "PWS" ~ 550,
+                            mgmt_area == "CI" ~ 550))
+
+#Shortraker Samples
+shortraker_samples <- samples %>%
+  filter(species_code == 152) %>% 
+  droplevels() %>% 
+  mutate(target = case_when(mgmt_area == "PWS" ~ 550,
+                            mgmt_area == "CI" ~ 550))
+
+```
+
+#Introduction
+This is a summar of the Region II port sampling program. The objective of the review is to ensure the sampling goals are proportional to landings. The species reviewed and current port sampling goals were obtained from a questionnaire developed by Leland Hulbert. Elisa Russ completed the questionnaire on behalf of Region II (Central Region).
+
+The commercial port sampling goals for Region II were established in 2006 based on Carlile (2005); goals are defined by area for this region. To reach the defined sampling goals (specified below), the port sampling program aims to collect samples throughout the fishery. However, when travel to other ports is required, attempts are made to maximize sampling effort during peak fishery periods. The Region II sampling program collects samples in Homer, Seward, Whittier, Valdez, and Kodiak. Sampling occurs year-round in Homer by ADF&G staff from the Homer office. Seward has a dedicated sampler who also covers the port of Whittier between January and March during the peak of the Pacific cod fishery. ADF&G staff from the Homer office also sample deliveries in Seward and Whittier when there is no dedicated sampler in Seward. At the peak of the walleye pollock season, one dedicated sampler from Region II goes to Kodiak to sample for approximately one week.
+
+To evaluate potential data gaps, landings per fishery were evaluated as the geometric mean and the geometric standard deviation by port for the most recent five years of complete data (`r AVGING_YEARS`) from the CFEC gross earnings file. The geometric standard deviation is a multiplicative factor to express the deviation from the mean (Kirkwood, 1979); the upper and lower limits expressed in each table represent the range of landings by port over the past five years. Landings were evaluated by calendar year , to match the Annual Management Reports and the opening of most of the commercial groundfish seasons. Landings include directed fishery and bycatch fishery landings; fish reported as discarded at sea. Personal use was included in the Region II analysis as these fish are typically sampled if available. Each fishery is described as the species, area, and fishery location  (state-waters, parallel , or throughout the exclusive economic zone). The general fisheries described below are Pacific cod , which includes the state-waters and parallel fishery), walleye pollock, sablefish, lingcod, black rockfish, yelloweye rockfish, quillback rockfish, rougheye rockfish, and shortraker rockfish. Data were subset in OceanAK, variables used are availble in the source code.
+
+```{r map_groundfish}
+map_path <- "../figures/"
+include_graphics(paste0(map_path,"Region_II/GF_EHKLMO_StateVsFederal_11x17_20151015.jpg"))
+```
+
+```{r map_cod}
+map_path <- "../figures/"
+include_graphics(paste0(map_path,"Region_II/GF_PCod_KLMO_StateVsFederal_11x17_20151015.jpg"))
+```
+
+```{r, eval = FALSE}
+-date_landed                    
+-species_code  	                
+-species_name                  
+-mgmt_prgm_code  	              
+-harvest_description  	         
+-harvest_code  	                
+-mgmt_area  
+-mgmt_area_district
+-cfec_permit_fishery
+-waters  
+-pounds  
+-delivery_code 
+-delivery_description 
+-disposition_code	 
+-disposition_description
+-port_code 
+-port_name
+```
+
+
+#State-Water and Parallel Cod Fisheries 
+```{r eval=FALSE}
+Species code = 110      
+Management program = SMPC and OA  
+Waters = State
+Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)  
+
+```
+
+Steve Barbeaux is the lead stock assessment author for GOA Pacific cod, which includes state-water and parallel fisheries. All model variants presented to the Plan Team in 2017 were single-sex age-based models (SS3) that use length based selectivity (Barbeaux et al., 2017). Elisa Russ has provided Dr. Barbeaux with historical port sampling data for Region II, and in recent years, provides data annually. In 2017, the ADF&G port sampling data were included in the stock assessment to augment missing observer data, however, it is unclear if all port sampling data were used. Region II collects age structures from 20% of Pacific cod samples and archives for future use.  
+
+Region II port sampling program collects Pacific cod samples during both state-water and parallel seasons. During the parallel season in the Cook Inlet Area, gear employed is different between districts with pot gear predominant in the Cook Inlet District and longline gear in the North Gulf District. During the state-waters season, longline gear is only allowed in Prince William Sound Area, which is the predominant gear type during both seasons. Pacific cod sampled from state waters landings during the parallel fisheries provide catch composition data, which would not be gained by the port sampling program otherwise. Mixed trips from vessels that harvested in both state and federal waters are not sampled during the parallel fishery; only when fishing is done within state waters are samples taken. VMS data allow for trip verification.  
+
+```{r state_cod}
+cod <- read.csv("../data/Region_II/region2_pacific_cod_adfg_permit.csv")
+cod <- cod %>% 
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = as.numeric(ifelse(month(date_landed)>= 7, year + 1, year))) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 95 & disposition_code != 98) %>% 
+  filter(mgmt_prgm_code != "TEST") %>% 
+  filter(waters == "STATE") %>% 
+  droplevels()
+```
+
+The reference line at 550 indicates the sampling goal for the PWS and CI.  
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+cod_samples_plot <- ggplot(data = cod_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,5000) +
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Pacific Cod Port Sampling") 
+ggsave(plot = cod_samples_plot, file = paste0("../figures/Region_II/pcod_samples.png"))
+
+print(cod_samples_plot)
+```
+
+##Pacific Cod Cook Inlet Area Fishery (Area H)
+
+```{r eval=FALSE}
+Species code = 110
+Management area = H  
+
+```
+
+State catch is subset by the management program code being equal to SMPC, parallel catch is subset by the management program code being equal to OA and waters equaling state, and bycatch is subset by the management program code not being equal to SMPC or OA. For Region II, bycatch harvest is considered to be part of the parallel harvest.   
+
+The Area H sampling goals for Pacific cod is 550 samples, mostly from Homer, primarily from pot  fisheries. There has been very little jig effort in recent years.
+
+```{r pcod_cook_inlet_state_waters}
+
+pcod_ci <- cod %>% 
+  filter(mgmt_area == "H") %>% 
+  # set state-water, parallel, and bycatch fisheries by mgmt_prgm_code
+  mutate(type = case_when(mgmt_prgm_code == "SMPC" ~ "state",
+                          mgmt_prgm_code == "OA" & waters == "STATE" ~ "parallel",
+                          mgmt_prgm_code != "SMPC" | mgmt_prgm_code != "OA" ~ "bycatch",
+                          # mgmt_prgm_code == "OA" & duplicated(.$date_landed, .$permit_serial_num, incomparables = FALSE) ~ "mixed",
+                          FALSE ~ "NA")) %>%
+  select(year, port_code, type, pounds) %>%
+  group_by(year, port_code, type) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code, type) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch  
+pcod_ci_plot <- ggplot(data = pcod_ci, aes(y = mean_landed, x = port_code, fill = type))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(pcod_ci$lower, na.rm = TRUE), 
+                                        max(pcod_ci$upper, na.rm = TRUE), 
+                                        length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(pcod_ci$lower, na.rm = TRUE), 
+                                                      max(pcod_ci$upper, na.rm = TRUE), 
+                                                      length.out = 10)),0))+
+  scale_fill_grey() +
+  scale_color_grey() +
+  ylab("Mean Harvest (lb)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Area H Pacific Cod State-Waters and Parallel Fisheries")
+
+ggsave(plot = pcod_ci_plot, file = paste0("../figures/Region_II/pcod_ci.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+
+# bycatch <- pcod_ci %>%
+#   filter(type == "bycatch") %>%
+#   dplyr::rename(mean_bycatch = mean_landed,
+#                 bycatch_upper = upper,
+#                 bycatch_lower = lower) %>%
+#   select(-type)
+# 
+# state <- pcod_ci %>%
+#   filter(type == "state") %>%
+#   dplyr::rename(mean_state = mean_landed,
+#                 state_upper = upper,
+#                 state_lower = lower) %>%
+#   select(-type)
+# 
+# parallel <- pcod_ci %>%
+#   filter(type == "parallel") %>%
+#   dplyr::rename(mean_parallel = mean_landed,
+#                 parallel_upper = upper,
+#                 parallel_lower = lower) %>%
+#   select(-type)
+# 
+# temp <- full_join(state, parallel, by = "port_code")
+# pcod_ci <- full_join(temp, bycatch, by = "port_code")
+# 
+# kable(pcod_ci, col.names = c("Port", "Mean State Landings (lb)", "Upper","Lower", "Mean Parallel (lsb)", "Upper", "Lower","Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(pcod_ci_plot)
+```
+
+
+##Pacific Cod Prince William Sound Area (Area E)
+
+```{r eval=FALSE}
+Species code = 110
+Management area = E
+
+```
+
+
+State catch is subset by the management program code being equal to SMPC, parallel catch is subset by the management program code being equal to OA and waters equaling state, and bycatch is subset by the management program code not being equal to SMPC or OA. For Region II, bycatch harvest is considered to be part of the parallel harvest.   
+
+The Pacific cod sampling goal for Area E is 550 samples, taken primarily in Seward and Whittier from longline vessels.  There has been minimal to zero jig and pot effort in Area E in recent years.
+```{r pcod_pws_state_waters}
+
+pcod_pws <- cod %>% 
+  filter(mgmt_area == "E") %>%  
+  # set state-water, parallel, and bycatch fisheries by mgmt_prgm_code
+  mutate(type = case_when(mgmt_prgm_code == "SMPC" ~ "state",
+                          mgmt_prgm_code == "OA" & waters == "STATE" ~ "parallel",
+                          mgmt_prgm_code != "SMPC" | mgmt_prgm_code != "OA" ~ "bycatch",
+                          # mgmt_prgm_code == "OA" & duplicated(.$date_landed, .$permit_serial_num, incomparables = FALSE) ~ "mixed",
+                          FALSE ~ "NA")) %>%
+    select(year, port_code, type, pounds) %>% 
+    group_by(year, port_code, type) %>%
+    summarise_all(funs(sum)) %>%
+    group_by(port_code, type) %>%
+    summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+    mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+    dplyr::rename(mean_landed = geoMean) %>% 
+    mutate(mean_landed = round(mean_landed, 0)) %>% 
+    mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+    mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+    select(-c(geoSD))
+  
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch  
+pcod_pws_plot <- ggplot(data = pcod_pws, aes(y = mean_landed, x = port_code, fill = type))+
+    geom_bar(position = position_dodge(), stat = "identity")+
+    geom_errorbar(aes(ymin = upper, ymax = lower, color = type),
+           width = 0.2, position = position_dodge(0.9))+
+    scale_y_continuous(breaks = round(seq(min(pcod_pws$lower, na.rm = TRUE), 
+                                  max(pcod_pws$upper, na.rm = TRUE), 
+                                  length.out = 10),0), 
+                    labels = scales::comma(round(seq(min(pcod_pws$lower, na.rm = TRUE), 
+                                  max(pcod_pws$upper, na.rm = TRUE), 
+                                  length.out = 10)),0))+
+    scale_fill_grey() +
+    scale_color_grey() +
+    ylab("Mean Harvest (lb)")+
+    xlab("Port Landed")+
+    ggtitle("Area E Pacific Cod State-Waters and Parallel Fisheries")
+
+ggsave(plot = pcod_pws_plot, file = paste0("../figures/Region_II/pcod_pws.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+
+# bycatch <- pcod_pws %>% 
+#     filter(type == "bycatch") %>% 
+#     dplyr::rename(mean_bycatch = mean_landed,
+#            bycatch_upper = upper,
+#            bycatch_lower = lower) %>% 
+#     select(-type)
+# 
+# state <- pcod_pws %>% 
+#     filter(type == "state") %>% 
+#      dplyr::rename(mean_state = mean_landed,
+#            state_upper = upper,
+#            state_lower = lower) %>%
+#     select(-type)
+# 
+# parallel <- pcod_pws %>% 
+#     filter(type == "state") %>% 
+#      dplyr::rename(mean_parallel = mean_landed,
+#            parallel_upper = upper,
+#            parallel_lower = lower) %>%
+#     select(-type)
+# 
+# temp <- full_join(state, parallel, by = "port_code")
+# pcod_pws <- full_join(temp, bycatch, by = "port_code")
+#   
+# kable(pcod_pws, col.names = c("Port", "Mean State Landings (lb)", "Upper","Lower", "Mean Parallel (lsb)", "Upper", "Lower","Mean Bycatch (lsb)", "Upper", "Lower"))
+```
+
+
+```{r echo = FALSE, fig.width=5.5,fig.height=3.5, fig.align = "center"}
+print(pcod_pws_plot)
+```
+
+#Walleye Pollock Prince William Sound (Area E)
+
+```{r eval=FALSE}
+Species code = 270  
+Waters = State  
+Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)    
+
+```
+
+The sampling goal is 550 samples of walleye pollock from the Prince William Sound pelagic trawl fishery that occurs in state waters. A Region II sampler travels to Kodiak for approximately one week during the peak of the pollock fishery to collect samples; samples are also collected in Seward when that processor opens and occasionally ADF&G staff in Kodiak collect samples from the fishery.    
+
+The stock assessment author for walleye pollock is Martin Dorn. ADF&G port sampling data are currently not included in the assessment, but the data have been offered. 
+```{r walleye_pollock_pws}
+pollock <- read.csv("../data/Region_II/walleye_pollock.csv")
+
+pollock <- pollock %>% 
+  filter(waters == "STATE") %>% 
+  filter(mgmt_area == "E") %>% 
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 95 & disposition_code != 98) %>% 
+  droplevels() %>% 
+  # mutate(type = case_when(gear == "Pelagic/mid-water trawl" ~ "directed",
+                          # gear == "Longline" ~ "bycatch",
+                          # gear == "Mechanical jigs" ~ "bycatch",
+                          # FALSE ~ "NA")) %>%
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+#to plot directed and bycatch together keep data in 'long' form where type indicates it is either directed or bycatch  
+pollock_plot <- ggplot(data = pollock, aes(y = mean_landed, x = port_code))+
+    geom_bar(position = position_dodge(), stat = "identity")+
+    geom_errorbar(aes(ymin = upper, ymax = lower),
+           width = 0.2, position = position_dodge(0.9))+
+    scale_y_continuous(breaks = round(seq(min(pollock$lower, na.rm = TRUE), 
+                                  max(pollock$upper, na.rm = TRUE), 
+                                  length.out = 10),0), 
+                    labels = scales::comma(round(seq(min(pollock$lower, na.rm = TRUE), 
+                                  max(pollock$upper, na.rm = TRUE), 
+                                  length.out = 10)),0))+
+    scale_fill_grey() +
+    scale_color_grey() +
+    ylab("Mean Harvest (lb)\n")+
+    xlab("Port Landed\n")+
+    ggtitle("Prince William Sound Walleye Pollock")
+    
+  
+ggsave(plot = pollock_plot, file = paste0("../figures/Region_II/pollock.png"))
+
+#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+
+# bycatch <- pollock %>% 
+#     filter(type == "bycatch") %>% 
+#     dplyr::rename(mean_bycatch = mean_landed,
+#            bycatch_upper = upper,
+#            bycatch_lower = lower) %>% 
+#     select(-type)
+# 
+# directed <- pollock %>% 
+#     filter(type == "directed") %>% 
+#      dplyr::rename(mean_state = mean_landed,
+#            state_upper = upper,
+#            state_lower = lower) %>%
+#     select(-type)
+# 
+# pollock <- full_join(directed,  bycatch, by = "port_code")
+#   
+# kable(pollock, col.names = c("Port", "Mean Directed Landings (lb)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
+
+```
+
+The reference line at 550 indicates the sampling goal for the PWS only. 
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+pollock_samples_plot <- ggplot(data = pollock_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,5000) +
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Pollock Port Sampling\n") 
+ggsave(plot = cod_samples_plot, file = paste0("../figures/Region_II/pollock_samples.png"))
+
+print(pollock_samples_plot)
+```
+
+
+```{r echo = FALSE, fig.width=5.5,fig.height=3.5, fig.align = "center"}
+print(pollock_plot)
+```
+
+#State Waters Sablefish Fisheries
+
+In Region II, the state sablefish GHL is independent of the federal ABC therefore these data are not used within the federal assessment. There is currently no sablefish assessment for Area E & H.  
+
+```{r eval=FALSE}
+Management program code = SMS      
+Waters = State      
+Disposition Code removed: 95(personal use - not sold) and 98(discarded at sea)        
+
+```
+
+```{r state_sablefish}
+sablefish <- read.csv("../data/Region_II/sablefish.csv")
+sablefish <- sablefish %>% 
+  # filter(harvest_code == 80) %>% 
+  filter(waters == "STATE") %>% 
+  filter(mgmt_prgm_code == "SMS" )%>% 
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = as.numeric(ifelse(month(date_landed)>=7, year + 1, year))) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 95 & disposition_code != 98) 
+
+
+```
+
+
+The reference line at 550 indicates the sampling goal for PWS and CI each.
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+
+sablefish_samples_plot <- ggplot(data = sablefish_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,1500) +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Sablefish Port Sampling")
+
+ggsave(plot = sablefish_samples_plot, file = paste0("../figures/Region_II/sablefish_samples.png"))
+
+print(sablefish_samples_plot)
+```
+
+##Sablefish Cook Inlet Area State Waters (Area H)
+The sampling goal for Cook Inlet sablefish is 550 samples, predominately taken in Seward, due to the fishery occurring in the North Gulf District. During the sablefish fishery, there is not a dedicated port sampler stationed in Seward. Therefore, staff from Homer drive to Seward to sample (4 hours each way).  Vessels are required to call in 6 hours prior to landing to provide notice to staff.  Harvest and effort has declined in recent years, however, sampling goals have still been achieved.
+
+There was one delivery of Cook Inlet Area Sablefish made in Kodiak on September 28, 2013.
+
+```{r sablefish}
+
+sablefish_ci <- sablefish %>% 
+  filter(mgmt_area == "H") %>% 
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))  
+
+# kable(sablefish_ci, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+sablefish_ci_plot <- ggplot(data = sablefish_ci, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(sablefish_ci$lower), 
+                                        max(sablefish_ci$upper), 
+                                        length.out = 15),0), 
+                     labels = scales::comma(round(seq(min(sablefish_ci$lower), 
+                                                      max(sablefish_ci$upper), 
+                                                      length.out = 15)),0))+
+  ylab("Mean Harvest (lb)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Sablefish Cook Inlet (Area H) State Waters ")
+
+ggsave(plot = sablefish_ci_plot, file = paste0("../figures/Region_II/sablefish_ci.png"))
+```
+
+
+```{r echo = FALSE, fig.width=5.5, fig.height=3.5, fig.align = "center"}
+print(sablefish_ci_plot)
+```
+
+
+##Sablefish Prince William Sound Area State Waters (Area E)
+The sampling goal for Prince William Sound sablefish is 550 samples, predominately taken in Cordova, although some landings are also sampled in Seward and Whittier. The fishery declined to a record low in 2015 with limited sampling opportunity, however, the sampling goal in 2016 and 2017 was achieved and harvest has steadily been increasing.
+```{r sablefish_pws}
+
+sablefish_pws <- sablefish %>% 
+  filter(mgmt_area == "E") %>% 
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))  
+
+# kable(sablefish_pws, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+sablefish_pws_plot <- ggplot(data = sablefish_pws, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(sablefish_pws$lower), 
+                                        max(sablefish_pws$upper), 
+                                        length.out = 15),0), 
+                     labels = scales::comma(round(seq(min(sablefish_pws$lower), 
+                                                      max(sablefish_pws$upper), 
+                                                      length.out = 15)),0))+
+  ylab("Mean Harvest (lb)")+
+  xlab("Port Landed")+
+  ggtitle("Sablefish Prince William Sound State Waters (Area E)")
+
+ggsave(plot = sablefish_pws_plot, file = paste0("../figures/Region_II/sablefish_pws.png"))
+```
+
+```{r echo = FALSE, fig.width=5.5,fig.height=3.5, fig.align = "center"}
+print(sablefish_pws_plot)
+```
+
+#Lingcod (0-200 nmi)
+
+```{r eval=FALSE}
+Species code = 130  
+Waters included both state and federal waters         
+Disposition Code removed: 98(discarded at sea)       
+
+```
+
+
+```{r lingcod}
+lingcod <- read.csv("../data/Region_II/lingcod.csv")
+lingcod <- lingcod %>% 
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = as.numeric(ifelse(month(date_landed)>=7, year + 1, year))) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 98) 
+  
+```
+
+The the reference line at 550 indicates the sampling goal for PWS and CI (jig only) each.
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+lingcod_samples_plot <- ggplot(data = lingcod_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,600) +
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Lingcod Port Sampling") 
+
+ggsave(plot = lingcod_samples_plot, file = paste0("../figures/Region_II/lingcod_samples.png"))
+
+print(lingcod_samples_plot)
+```
+
+
+##Lingcod Cook Inlet Area (Area H)
+In the Cook Inlet Area, lingcod are targeted in a jig-only fishery and also retained as bycatch in other fisheries. There has been very low effort in the directed fishery in recent years until effort increased significantly in 2017, when the fishery was closed December 15 because the GHL was reached. The sampling goal is 550 samples that are predominately taken in Homer and Seward. The sampling goal was achieved in 2017 for the first time in the history of the sampling program.
+
+```{r lingcod_ci}
+lingcod_ci <- lingcod %>% 
+  filter(mgmt_area == "H") %>%
+ select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))  
+
+# kable(lingcod_ci, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+lingcod_ci_plot <- ggplot(data = lingcod_ci, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+           width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(lingcod_ci$lower), 
+                                  max(lingcod_ci$upper), 
+                                  length.out = 15),0), 
+                    labels = scales::comma(round(seq(min(lingcod_ci$lower), 
+                                  max(lingcod_ci$upper), 
+                                  length.out = 15)),0))+
+  ylab("Mean Harvest (lb)")+
+  xlab("Port Landed")+
+  ggtitle("Lingcod Cook Inlet (Area H)")
+
+ggsave(plot = lingcod_ci_plot, file = paste0("../figures/Region_II/lingcod_ci.png"))
+```
+
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(lingcod_ci_plot)
+```
+
+##Lingcod Prince William Sound (Area E)
+In the Prince William Sound Area lingcod are targeted primarily by longline vessels in the directed fishery but are also retained as bycatch. The sampling goal for Prince William Sound Area lingcod is 550 samples that are predominately taken in Cordova. There has been very low effort in this fishery in recent years.
+
+```{r lingcod_pws}
+lingcod_pws <- lingcod %>% 
+  filter(mgmt_area == "E") %>%
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))  
+
+# kable(lingcod_pws, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+lingcod_pws_plot <- ggplot(data = lingcod_pws, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(lingcod_pws$lower), 
+                                        max(lingcod_pws$upper), 
+                                        length.out = 15),0), 
+                     labels = scales::comma(round(seq(min(lingcod_pws$lower), 
+                                                      max(lingcod_pws$upper), 
+                                                      length.out = 15)),0))+
+  ylab("Mean Harvest (lb)")+
+  xlab("Port Landed")+
+  ggtitle("Lingcod Prince William Sound (Area E)")
+
+  ggsave(plot = lingcod_pws_plot, file = paste0("../figures/Region_II/lingcod_ci.png"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(lingcod_pws_plot)
+```
+
+#Black Rockfish Cook Inlet (Area H)
+
+```{r eval=FALSE}
+Species code = 142  
+Waters = State and Federal
+Management program code = SMO   
+Disposition codes removed: 98(discarded at sea)    
+
+```
+
+
+In the Cook Inlet Area, black rockfish are the primary component of the harvest in the directed jig-only pelagic shelf rockfish (PSR) fishery, which also targets dark, dusky, yellowtail, and widow rockfish. All species of rockfish are retained as bycatch and retention is required in groundfish and halibut fisheries in Central Region state waters. The state manages black and dark rockfish in both state and federal waters. The sampling goal for black rockfish is 550 samples that are predominately taken in Homer and Seward. There is no dedicated port sampler in Seward during the peak of the PSR fishery, requiring Homer Staff to travel to Seward to collect samples (4 hours each way). Vessels are required to call in 6 hours prior to landing to provide notice to staff. Participation in the directed fishery has increased since 2015 after many years of low effort and sampling goals have also been achieved during the recent three years. 
+```{r black rockfish}
+black_rf <- read.csv("../data/Region_II/black_rockfish.csv")
+
+black_rf <- black_rf %>% 
+  filter(mgmt_prgm_code == "SMO") %>% 
+  filter(mgmt_area == "H") %>% 
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 98) %>% 
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  filter(pounds != 0 ) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))  
+
+# kable(black_rf, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+#landings plot
+black_rf_plot <- ggplot(data = black_rf, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity")+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(black_rf$lower), 
+                                  max(black_rf$upper), 
+                                  length.out = 10),0), 
+                     labels = scales::comma(round(seq(min(black_rf$lower), 
+                                                max(black_rf$upper), 
+                                                length.out = 10)),0))+
+  ylab("Mean Harvest (lb)")+
+  xlab("Port Landed")+
+  ggtitle("Black Rockfish Cook Inlet (Area H)")
+
+ggsave(plot = black_rf_plot, file = paste0("../figures/Region_II/black_rockfish_ci.png"))
+
+```
+
+The the reference line at 550 indicates the sampling goal for CI (directed), PWS samples do not have a sampling goal.
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+black_samples_plot <- ggplot(data = black_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,1500) +
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Black Rockfish Port Sampling")
+
+ggsave(plot = black_samples_plot, file = paste0("../figures/Region_II/black_rockfish_samples.png"))
+
+print(black_samples_plot)
+```
+
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(black_rf_plot)
+```
+
+#Yelloweye Rockfish State Waters
+
+```{r eval=FALSE}
+Species code = 145
+Waters = State
+Disposition Code removed: 95(personal use - not sold) and 98(discarded at sea)
+
+```
+
+Yelloweye rockfish is the primary component of the demersal shelf rockfish (DSR) assemblage. In Region II fisheries, retention of all rockfish is required in groundfish and halibut fisheries in state waters.  Achieving yelloweye rockfish sampling goals is dependent on effort in targeted fisheries and associated yelloweye rockfish bycatch; sampling is opportunistic. Staff receive prior notice of landing reports from NMFS Data Clerks for IFQ landings to aid in sampling rockfish bycatch from associated deliveries. 
+```{r dark rockfish}
+yelloweye <- read.csv("../data/Region_II/yelloweye.csv")
+
+yelloweye <- yelloweye %>% 
+  filter(waters == "STATE") %>% 
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 95 & disposition_code != 98)  
+
+```
+
+The sampling goal for yelloweye rockfish in the Cook Inlet Area is 550 samples predominately taken in Homer and Seward.  The sampling goal for yelloweye rockfish in the Prince William Sound Area is 550 samples, both indicated in the reference line.
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+yelloweye_samples_plot <- ggplot(data = yelloweye_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,1500)+
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Black Rockfish Port Sampling")
+
+ggsave(plot = yelloweye_samples_plot, file = paste0("../figures/Region_II/yelloweye_samples.png"))
+
+print(yelloweye_samples_plot)
+```
+
+
+##Yelloweye Rockfish Cook Inlet Area (Area H)
+In the Cook Inlet Area, yelloweye rockfish is a bycatch-only fishery and harvest occurs primarily in targeted Pacific cod, pelagic shelf rockfish, and halibut fisheries. Sampling goals have been achieved since 2014 due to increased effort in the Pacific cod longline and PSR jig fisheries. 
+```{r yelloweye_ci}
+yelloweye_ci <- yelloweye %>% 
+  filter(mgmt_area == "H" ) %>% 
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  filter(pounds != 0 ) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+# kable(yelloweye, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+yelloweye_ci_plot <- ggplot(data = yelloweye_ci, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity", width = 0.5)+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(yelloweye_ci$lower, na.rm = TRUE),
+                                        max(yelloweye_ci$upper, na.rm = TRUE),
+                                        length.out = 10)),
+                     labels = scales::comma(round(seq(min(yelloweye_ci$lower, na.rm = TRUE),
+                                                      max(yelloweye_ci$upper, na.rm = TRUE),
+                                                      length.out = 10))))+
+  ylab("Mean Harvest (lb)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Yelloweye Rockfish Cook Inlet")
+
+ggsave(plot = yelloweye_ci_plot, file = paste0("../figures/Region_II/yelloweye_ci.png"))
+```
+
+
+```{r echo = FALSE, fig.width=5.5 ,fig.height=3.5, fig.align = "center"}
+print(yelloweye_ci_plot)
+```
+
+##Yelloweye Rockfish Prince William Sound (Area E)
+In the Prince William Sound Area, yelloweye rockfish is a bycatch-only fishery and harvest occurs primarily in targeted Pacific cod and halibut longline fisheries. Sampling goals were achieved or nearly achieved during the most recent five years, however, total harvest decreased in 2017, following a 20-year high in 2016, due to less effort in the Prince William Sound Pacific cod fishery. 
+
+```{r yelloweye_pws}
+yelloweye_pws <- yelloweye %>% 
+  filter(mgmt_area == "E" ) %>% 
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  filter(pounds != 0 ) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+# kable(yelloweye_pws, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+yelloweye_pws_plot <- ggplot(data = yelloweye_pws, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity", width = 0.5)+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(yelloweye_pws$lower, na.rm = TRUE),
+                                        max(yelloweye_pws$upper, na.rm = TRUE),
+                                        length.out = 10)),
+                     labels = scales::comma(round(seq(min(yelloweye_pws$lower, na.rm = TRUE),
+                                                      max(yelloweye_pws$upper, na.rm = TRUE),
+                                                      length.out = 10))))+
+  ylab("Mean Harvest (lb)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Yelloweye Rockfish Prince William Sound")
+
+ggsave(plot = yelloweye_pws_plot, file = paste0("../figures/Region_II/yelloweye_pws.png"))
+```
+
+
+```{r echo = FALSE, fig.width=5.5, fig.height=3.5, fig.align = "center"}
+print(yelloweye_pws_plot)
+```
+
+#Quillback Rockfish State Waters
+
+```{r eval=FALSE}
+Species code = 147  
+Waters = State  
+Disposition Code removed: 98(discarded at sea)  
+
+```
+
+
+```{r quillback_state_waters}
+quillback <- read.csv("../data/Region_II/quillback_rockfish.csv")
+
+quillback <- quillback %>% 
+  filter(waters == "STATE") %>% 
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 98) 
+
+```
+
+The sampling goal for quillback rockfish in the Cook Inlet Area and the Prince William Sound Area is 550 samples, indicated by the the reference line at 550.
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+quillback_samples_plot <- ggplot(data = quillback_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,1500)+
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Quillback Port Sampling")
+
+ggsave(plot = quillback_samples_plot, file = paste0("../figures/Region_II/quillback_samples.png"))
+
+print(quillback_samples_plot)
+```
+
+##Quillback Rockfish Cook Inlet (Area H)
+This is a bycatch only fishery, therefore only opportunistic sampling is available. Quillback is a component of the demersal shelf rockfish assemblage, bycatch of quillback rockfish has been higher in recent years and sampling effort for that species has increased since 2012. Sampling goals are often not met unless there is high effort or harvest in the targeted fisheries.   
+
+```{r quillback_ci,}
+quillback_ci <- quillback %>% 
+  filter(mgmt_area == "H" ) %>% 
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  filter(pounds != 0 ) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+# kable(quillback_ci, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+quillback_ci_plot <- ggplot(data = quillback_ci, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity", width = 0.5)+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(quillback_ci$lower, na.rm = TRUE),
+                                        max(quillback_ci$upper, na.rm = TRUE),
+                                        length.out = 10)),
+                     labels = scales::comma(round(seq(min(quillback_ci$lower, na.rm = TRUE),
+                                                      max(quillback_ci$upper, na.rm = TRUE),
+                                                      length.out = 10))))+
+  ylab("Mean Harvest (lb)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Quillback Rockfish Cook Inlet")
+
+ggsave(plot = quillback_ci_plot, file = paste0("../figures/Region_II/quillback_ci.png"))
+```
+
+
+```{r echo = FALSE, fig.width=5.5, fig.height=3.5, fig.align = "center"}
+print(quillback_ci_plot)
+```
+
+##Quillback Rockfish Prince William Sound (Area E)
+ This is a bycatch only fishery, therefore only opportunistic sampling is available. Quillback is a component of the DSR assemblage, bycatch of quillback rockfish has been higher in recent years and sampling effort for that species has increased since 2012. Sampling goals are often not met unless there is high effort or harvest in the targeted fisheries. 
+```{r quillback_pws, include = FALSE}
+quillback_pws <- quillback %>% 
+  filter(mgmt_area == "E" ) %>% 
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  filter(pounds != 0 ) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+# kable(quillback_pws, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+quillback_pws_plot <- ggplot(data = quillback_pws, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity", width = 0.5)+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(quillback_pws$lower, na.rm = TRUE),
+                                        max(quillback_pws$upper, na.rm = TRUE),
+                                        length.out = 10)),
+                     labels = scales::comma(round(seq(min(quillback_pws$lower, na.rm = TRUE),
+                                                      max(quillback_pws$upper, na.rm = TRUE),
+                                                      length.out = 10))))+
+  ylab("Mean Harvest (lb)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Quillback Rockfish Prince William Sound")
+
+ggsave(plot = quillback_pws_plot, file = paste0("../figures/Region_II/quillback_pws.png"))
+```
+
+
+```{r echo = FALSE, fig.width=5.5, fig.height=3.5, fig.align = "center"}
+print(quillback_pws_plot)
+```
+
+#Rougheye Rockfish State Waters
+
+```{r eval=FALSE}
+Species code = 151  
+Waters = State  
+Disposition Code removed: 98(discarded at sea)    
+
+```
+
+Rougheye rockfish are deep water slope rockfish species. In the Central Region Fisheries, they are retained as bycatch only and harvest occurs predominately in the sablefish longline fisheries and Prince William Sound trawl fishery. The sampling goal for rougheye rockfish in both Cook Inlet and Prince William Sound Areas is 550 samples. Sampling goals have never been met.  
+
+```{r rougheye_state_waters}
+rougheye <- read.csv("../data/Region_II/rougheye_rockfish.csv")
+
+rougheye <- rougheye %>% 
+  filter(waters == "STATE") %>% 
+    mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 98) 
+
+```
+
+The the reference line at 550 indicates the sampling goal for PWS and CI Areas.
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+rougheye_samples_plot <- ggplot(data = rougheye_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,1500)+
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Rougheye Port Sampling")
+
+ggsave(plot = rougheye_samples_plot, file = paste0("../figures/Region_II/rougheye_samples.png"))
+
+print(rougheye_samples_plot)
+```
+
+##Rougheye Rockfish Cook Inlet (Area H)
+In the Cook Inlet Area, there is very low harvest of rougheye, resulting in few opportunities to collect samples. 
+```{r rougheye_ci}
+rougheye_ci <- rougheye %>% 
+  filter(mgmt_area == "H" ) %>% 
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  filter(pounds != 0 ) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+# kable(rougheye_ci, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+rougheye_ci_plot <- ggplot(data = rougheye_ci, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity", width = 0.5)+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(rougheye_ci$lower, na.rm = TRUE),
+                                        max(rougheye_ci$upper, na.rm = TRUE),
+                                        length.out = 10)),
+                     labels = scales::comma(round(seq(min(rougheye_ci$lower, na.rm = TRUE),
+                                                      max(rougheye_ci$upper, na.rm = TRUE),
+                                                      length.out = 10))))+
+  ylab("Mean Harvest (lb)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Rougheye Rockfish Cook Inlet")
+
+ggsave(plot = rougheye_ci_plot, file = paste0("../figures/Region_II/rougheye_ci.png"))
+```
+
+```{r echo = FALSE, fig.width=5.5, fig.height=3.5, fig.align = "center"}
+print(rougheye_ci_plot)
+```
+
+##Rougheye Rockfish Prince William Sound (Area E)
+Harvest is higher in Prince William Sound although still relatively low, and 2017 showed the lowest harvests since 2003. Rougheye samples from Prince William Sound are collected during sablefish sampling and during the annual Pollock trawl fishery sampling trip to Kodiak. 
+```{r rougheye_pws}
+rougheye_pws <- rougheye %>% 
+  filter(mgmt_area == "E" ) %>% 
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  filter(pounds != 0 ) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+# kable(rougheye_pws, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+rougheye_pws_plot <- ggplot(data = rougheye_pws, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity", width = 0.5)+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(rougheye_pws$lower, na.rm = TRUE),
+                                        max(rougheye_pws$upper, na.rm = TRUE),
+                                        length.out = 10)),
+                     labels = scales::comma(round(seq(min(rougheye_pws$lower, na.rm = TRUE),
+                                                      max(rougheye_pws$upper, na.rm = TRUE),
+                                                      length.out = 10))))+
+  ylab("Mean Harvest (lb)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Rougheye Rockfish Prince William Sound")
+
+ggsave(plot = rougheye_pws_plot, file = paste0("../figures/Region_II/rougheye_pws.png"))
+```
+
+
+```{r echo = FALSE, fig.width=5.5, fig.height=3.5, fig.align = "center"}
+print(quillback_pws_plot)
+```
+
+#Shortrakers Rockfish State Waters
+```{r shortraker_state_waters}
+shortraker <- read.csv("../data/Region_II/shortraker_rockfish.csv")
+
+shortraker <- shortraker %>% 
+  filter(waters == "STATE") %>% 
+  mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
+  filter(year %in% AVGING_YEARS) %>% 
+  filter(disposition_code != 98) 
+
+```
+
+The the reference line at 550 indicates the sampling goal for PWS and CI.
+```{r echo = FALSE, fig.width=5.5, fig.height=3.5, fig.align = "center"}
+shortraker_samples_plot <- ggplot(data = shortraker_samples)+
+  geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
+  geom_hline(yintercept = 550)+
+  ylim(0,1500)+
+  # scale_fill_grey() + 
+  # scale_color_grey() +
+  ylab("Number of Samples\n")+
+  xlab("Year\n")+
+  ggtitle("Shortraker Port Sampling")
+
+ggsave(plot = shortraker_samples_plot, file = paste0("../figures/Region_II/shortraker_samples.png"))
+
+print(rougheye_samples_plot)
+```
+
+Shortraker rockfish are deep water slope rockfish species. In the Central Region Fisheries, they are retained as bycatch only and harvest occurs predominately in the sablefish longline fisheries and Prince William Sound trawl fishery. The sampling goal for shortraker rockfish in both Cook Inlet and Prince William Sound Areas is 550 samples for each species. Sampling goals have never been met.  
+
+##Shortraker Rockfish Cook Inlet (Area H)
+In the Cook Inlet Area, there is minimal harvest of shortraker resulting in few opportunities to collect samples.  
+```{r shortraker_ci}
+shortraker_ci <- shortraker %>% 
+  filter(mgmt_area == "H" ) %>% 
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  filter(pounds != 0 ) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+# kable(shortraker_ci, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+shortraker_ci_plot <- ggplot(data = shortraker_ci, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity", width = 0.5)+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(shortraker_ci$lower, na.rm = TRUE),
+                                        max(shortraker_ci$upper, na.rm = TRUE),
+                                        length.out = 10)),
+                     labels = scales::comma(round(seq(min(shortraker_ci$lower, na.rm = TRUE),
+                                                      max(shortraker_ci$upper, na.rm = TRUE),
+                                                      length.out = 10))))+
+  ylab("Mean Harvest (lb)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Shortraker Rockfish Cook Inlet")
+
+ggsave(plot = shortraker_ci_plot, file = paste0("../figures/Region_II/shortraker_ci.png"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(shortraker_ci_plot)
+```
+
+##Shortraker Rockfish Prince William Sound (Area E)
+Harvest is higher in Prince William Sound although still relatively low, and 2017 showed the lowest harvests since 2003. Shortraker samples from Prince William Sound are collected during sablefish sampling and during the annual Pollock trawl fishery sampling trip to Kodiak.
+```{r shortraker_pws}
+shortraker_pws <- shortraker %>% 
+  filter(mgmt_area == "E" ) %>% 
+  select(year, port_code, pounds) %>% 
+  group_by(year, port_code) %>%
+  summarise_all(funs(sum)) %>%
+  group_by(port_code) %>%
+  filter(pounds != 0 ) %>%
+  summarise_at(vars(pounds), funs(geoMean, geoSD)) %>% 
+  dplyr::rename(mean_landed = geoMean) %>% 
+  mutate(geoSD = ifelse(is.na(geoSD), 1, geoSD)) %>% 
+  mutate(mean_landed = round(mean_landed, 0)) %>% 
+  mutate(upper = round(mean_landed*geoSD, 0)) %>% 
+  mutate(lower = round(mean_landed/geoSD, 0)) %>% 
+  select(-c(geoSD))
+
+# kable(shortraker_pws, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+
+shortraker_pws_plot <- ggplot(data = shortraker_pws, aes(y = mean_landed, x = port_code))+
+  geom_bar(position = position_dodge(), stat = "identity", width = 0.5)+
+  geom_errorbar(aes(ymin = upper, ymax = lower),
+                width = 0.2, position = position_dodge(0.9))+
+  scale_y_continuous(breaks = round(seq(min(shortraker_pws$lower, na.rm = TRUE),
+                                        max(shortraker_pws$upper, na.rm = TRUE),
+                                        length.out = 10)),
+                     labels = scales::comma(round(seq(min(shortraker_pws$lower, na.rm = TRUE),
+                                                      max(shortraker_pws$upper, na.rm = TRUE),
+                                                      length.out = 10))))+
+  ylab("Mean Harvest (lb)\n")+
+  xlab("Port Landed\n")+
+  ggtitle("Shortraker Rockfish Prince William Sound")
+
+ggsave(plot = shortraker_pws_plot, file = paste0("../figures/Region_II/shortraker_pws.png"))
+```
+
+```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
+print(shortraker_pws_plot)
+```
+
+
+##References
+Barbeaux, S., Aydin, K., Fissel, B., Hosman, K., Palsson W., Shotwell, K., Yang, Q., Zador, S. (2017). Assessment of the Pacific cod stock in the Gulf of Alaska, Executive Summary. *NPFMC Gulf of Alaska SAFE*. pp.183 - 326  NOAA, Seattle, WA. 
+
+Carlile, D. (2005). An assessment of age determination needs and sample sizes for groundfish fisheries managed by the State of Alaska. *Special Publication* No. 05-12. pp. 1-30. Alaska Department of Fish and Game, Juneau, AK.
+
+Kirkwood, T.B.L. (1979).Geometric Means and Measures of Dispersion. *Biometrics, 35:4*.pp. 908-909. 
+
