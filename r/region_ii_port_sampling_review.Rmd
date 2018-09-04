@@ -137,11 +137,11 @@ shortraker_samples <- samples %>%
 ```
 
 #Introduction
-This is a summar of the Region II port sampling program. The objective of the review is to ensure the sampling goals are proportional to landings. The species reviewed and current port sampling goals were obtained from a questionnaire developed by Leland Hulbert. Elisa Russ completed the questionnaire on behalf of Region II (Central Region).
+This is a summary of the Region II port sampling program. The objective of the review is to ensure the sampling goals are proportional to landings. The species reviewed and port sampling goals were obtained from a questionnaire developed by Leland Hulbert. Elisa Russ completed the questionnaire on behalf of Region II (Central Region).  
 
-The commercial port sampling goals for Region II were established in 2006 based on Carlile (2005); goals are defined by area for this region. To reach the defined sampling goals (specified below), the port sampling program aims to collect samples throughout the fishery. However, when travel to other ports is required, attempts are made to maximize sampling effort during peak fishery periods. The Region II sampling program collects samples in Homer, Seward, Whittier, Valdez, and Kodiak. Sampling occurs year-round in Homer by ADF&G staff from the Homer office. Seward has a dedicated sampler who also covers the port of Whittier between January and March during the peak of the Pacific cod fishery. ADF&G staff from the Homer office also sample deliveries in Seward and Whittier when there is no dedicated sampler in Seward. At the peak of the walleye pollock season, one dedicated sampler from Region II goes to Kodiak to sample for approximately one week.
+The commercial port sampling goals for Region II were established in 2006 based on Carlile (2005); goals are defined by area for this region. To reach the defined sampling goals (specified below), the port sampling program aims to collect samples throughout the fishery. However, when travel to other ports is required, attempts are made to maximize sampling effort during peak fishery periods. The Region II sampling program collects samples in Homer, Seward, Whittier, Valdez, and Kodiak. Sampling occurs year-round in Homer by ADF&G staff from the Homer office. Seward has a dedicated sampler who also covers the port of Whittier between January and March during the peak of the Pacific cod fishery. ADF&G staff from the Homer office also sample deliveries in Seward and Whittier when there is no dedicated sampler in Seward. At the peak of the walleye pollock season, one dedicated sampler from Region II goes to Kodiak to sample for approximately one week.  
 
-To evaluate potential data gaps, landings per fishery were evaluated as the geometric mean and the geometric standard deviation by port for the most recent five years of complete data (`r AVGING_YEARS`) from the CFEC gross earnings file. The geometric standard deviation is a multiplicative factor to express the deviation from the mean (Kirkwood, 1979); the upper and lower limits expressed in each table represent the range of landings by port over the past five years. Landings were evaluated by calendar year , to match the Annual Management Reports and the opening of most of the commercial groundfish seasons. Landings include directed fishery and bycatch fishery landings; fish reported as discarded at sea. Personal use was included in the Region II analysis as these fish are typically sampled if available. Each fishery is described as the species, area, and fishery location  (state-waters, parallel , or throughout the exclusive economic zone). The general fisheries described below are Pacific cod , which includes the state-waters and parallel fishery), walleye pollock, sablefish, lingcod, black rockfish, yelloweye rockfish, quillback rockfish, rougheye rockfish, and shortraker rockfish. Data were subset in OceanAK, variables used are availble in the source code.
+To evaluate potential data gaps, landings per fishery were evaluated as the geometric mean and the geometric standard deviation by port for the most recent five years of complete data (2013, 2014, 2015, 2016, 2017) from the CFEC gross earnings file. The geometric standard deviation is a multiplicative factor to express the deviation from the mean (Kirkwood, 1979); the upper and lower limits expressed in each table represent the range of landings by port over the past five years. Landings were evaluated by calendar year, to match the Annual Management Reports and the opening of most of the commercial groundfish seasons. Landings include directed fishery and bycatch fishery landings; fish reported as discarded at sea. Personal use was included in the Region II analysis as these fish are typically sampled if available. Each fishery is described as the species, area, and fishery location (state-waters, parallel, or throughout the exclusive economic zone). The general fisheries described below are Pacific cod, which includes the state-waters and parallel fishery), walleye pollock, sablefish, lingcod, black rockfish, yelloweye rockfish, quillback rockfish, rougheye rockfish, and shortraker rockfish. Data were subset in OceanAK, variables used are available in the source code.
 
 ```{r map_groundfish}
 map_path <- "../figures/"
@@ -183,7 +183,7 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 
 ```
 
-Steve Barbeaux is the lead stock assessment author for GOA Pacific cod, which includes state-water and parallel fisheries. All model variants presented to the Plan Team in 2017 were single-sex age-based models (SS3) that use length based selectivity (Barbeaux et al., 2017). Elisa Russ has provided Dr. Barbeaux with historical port sampling data for Region II, and in recent years, provides data annually. In 2017, the ADF&G port sampling data were included in the stock assessment to augment missing observer data, however, it is unclear if all port sampling data were used. Region II collects age structures from 20% of Pacific cod samples and archives for future use.  
+Steve Barbeaux is the lead stock assessment author for GOA Pacific cod, which includes state-water and parallel fisheries. All model variants presented to the Plan Team in 2017 were single-sex age-based models (SS3) that use length-based selectivity (Barbeaux et al., 2017). Elisa Russ has provided Dr. Barbeaux with historical port sampling data for Region II, and in recent years, provides data annually. In 2017, the ADF&G port sampling data were included in the stock assessment to augment missing observer data, however, it is unclear if all port sampling data were used. Region II collects age structures from 20% of Pacific cod samples and archives for future use.  
 
 Region II port sampling program collects Pacific cod samples during both state-water and parallel seasons. During the parallel season in the Cook Inlet Area, gear employed is different between districts with pot gear predominant in the Cook Inlet District and longline gear in the North Gulf District. During the state-waters season, longline gear is only allowed in Prince William Sound Area, which is the predominant gear type during both seasons. Pacific cod sampled from state waters landings during the parallel fisheries provide catch composition data, which would not be gained by the port sampling program otherwise. Mixed trips from vessels that harvested in both state and federal waters are not sampled during the parallel fishery; only when fishing is done within state waters are samples taken. VMS data allow for trip verification.  
 
@@ -537,7 +537,7 @@ print(sablefish_samples_plot)
 ```
 
 ##Sablefish Cook Inlet Area State Waters (Area H)
-The sampling goal for Cook Inlet sablefish is 550 samples, predominately taken in Seward, due to the fishery occurring in the North Gulf District. During the sablefish fishery, there is not a dedicated port sampler stationed in Seward. Therefore, staff from Homer drive to Seward to sample (4 hours each way).  Vessels are required to call in 6 hours prior to landing to provide notice to staff.  Harvest and effort has declined in recent years, however, sampling goals have still been achieved.
+The sampling goal for Cook Inlet sablefish is 550 samples, predominately taken in Seward, due to the fishery occurring in the North Gulf District. During the sablefish fishery, there is not a dedicated port sampler stationed in Seward. Therefore, staff from Homer drive to Seward to sample (4 hours each way).  Vessels are required to call in 6 hours prior to landing to provide notice to staff.  Harvest and effort have declined in recent years, however, sampling goals have still been achieved.
 
 There was one delivery of Cook Inlet Area Sablefish made in Kodiak on September 28, 2013.
 
@@ -644,7 +644,7 @@ lingcod <- lingcod %>%
   
 ```
 
-The the reference line at 550 indicates the sampling goal for PWS and CI (jig only) each.
+The reference line at 550 indicates the sampling goal for PWS and CI (jig only) each.
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
 lingcod_samples_plot <- ggplot(data = lingcod_samples)+
   geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
@@ -663,7 +663,7 @@ print(lingcod_samples_plot)
 
 
 ##Lingcod Cook Inlet Area (Area H)
-In the Cook Inlet Area, lingcod are targeted in a jig-only fishery and also retained as bycatch in other fisheries. There has been very low effort in the directed fishery in recent years until effort increased significantly in 2017, when the fishery was closed December 15 because the GHL was reached. The sampling goal is 550 samples that are predominately taken in Homer and Seward. The sampling goal was achieved in 2017 for the first time in the history of the sampling program.
+In the Cook Inlet Area, lingcod are targeted in a jig-only fishery and retained as bycatch in other fisheries. There has been very low effort in the directed fishery in recent years until effort increased significantly in 2017, when the fishery was closed December 15 because the GHL was reached. The sampling goal is 550 samples that are predominately taken in Homer and Seward. The sampling goal was achieved in 2017 for the first time in the history of the sampling program.
 
 ```{r lingcod_ci}
 lingcod_ci <- lingcod %>% 
@@ -802,7 +802,7 @@ ggsave(plot = black_rf_plot, file = paste0("../figures/Region_II/black_rockfish_
 
 ```
 
-The the reference line at 550 indicates the sampling goal for CI (directed), PWS samples do not have a sampling goal.
+The reference line at 550 indicates the sampling goal for CI (directed), PWS samples do not have a sampling goal.  
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
 black_samples_plot <- ggplot(data = black_samples)+
   geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
@@ -974,7 +974,7 @@ quillback <- quillback %>%
 
 ```
 
-The sampling goal for quillback rockfish in the Cook Inlet Area and the Prince William Sound Area is 550 samples, indicated by the the reference line at 550.
+The sampling goal for quillback rockfish in the Cook Inlet Area and the Prince William Sound Area is 550 samples, indicated by the reference line at 550.
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
 quillback_samples_plot <- ggplot(data = quillback_samples)+
   geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
@@ -1035,7 +1035,7 @@ print(quillback_ci_plot)
 ```
 
 ##Quillback Rockfish Prince William Sound (Area E)
- This is a bycatch only fishery, therefore only opportunistic sampling is available. Quillback is a component of the DSR assemblage, bycatch of quillback rockfish has been higher in recent years and sampling effort for that species has increased since 2012. Sampling goals are often not met unless there is high effort or harvest in the targeted fisheries. 
+This is a bycatch only fishery, therefore only opportunistic sampling is available. Quillback is a component of the DSR assemblage, bycatch of quillback rockfish has been higher in recent years and sampling effort for that species has increased since 2012. Sampling goals are often not met unless there is high effort or harvest in the targeted fisheries. 
 ```{r quillback_pws, include = FALSE}
 quillback_pws <- quillback %>% 
   filter(mgmt_area == "E" ) %>% 
@@ -1100,7 +1100,7 @@ rougheye <- rougheye %>%
 
 ```
 
-The the reference line at 550 indicates the sampling goal for PWS and CI Areas.
+The reference line at 550 indicates the sampling goal for PWS and CI Areas.
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
 rougheye_samples_plot <- ggplot(data = rougheye_samples)+
   geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
@@ -1214,7 +1214,7 @@ shortraker <- shortraker %>%
 
 ```
 
-The the reference line at 550 indicates the sampling goal for PWS and CI.
+The reference line at 550 indicates the sampling goal for PWS and CI.
 ```{r echo = FALSE, fig.width=5.5, fig.height=3.5, fig.align = "center"}
 shortraker_samples_plot <- ggplot(data = shortraker_samples)+
   geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
@@ -1233,8 +1233,8 @@ print(rougheye_samples_plot)
 
 Shortraker rockfish are deep water slope rockfish species. In the Central Region Fisheries, they are retained as bycatch only and harvest occurs predominately in the sablefish longline fisheries and Prince William Sound trawl fishery. The sampling goal for shortraker rockfish in both Cook Inlet and Prince William Sound Areas is 550 samples for each species. Sampling goals have never been met.  
 
-##Shortraker Rockfish Cook Inlet (Area H)
-In the Cook Inlet Area, there is minimal harvest of shortraker resulting in few opportunities to collect samples.  
+##Shortraker Rockfish Cook Inlet (Area H)  
+In the Cook Inlet Area, there is minimal harvest of shortraker, resulting in few opportunities to collect samples.  
 ```{r shortraker_ci}
 shortraker_ci <- shortraker %>% 
   filter(mgmt_area == "H" ) %>% 
@@ -1321,5 +1321,5 @@ Barbeaux, S., Aydin, K., Fissel, B., Hosman, K., Palsson W., Shotwell, K., Yang,
 
 Carlile, D. (2005). An assessment of age determination needs and sample sizes for groundfish fisheries managed by the State of Alaska. *Special Publication* No. 05-12. pp. 1-30. Alaska Department of Fish and Game, Juneau, AK.
 
-Kirkwood, T.B.L. (1979).Geometric Means and Measures of Dispersion. *Biometrics, 35:4*.pp. 908-909. 
+Kirkwood, T.B.L. (1979). Geometric Means and Measures of Dispersion. *Biometrics, 35:4*. pp. 908-909. 
 
