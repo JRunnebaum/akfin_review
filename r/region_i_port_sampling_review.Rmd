@@ -1,6 +1,7 @@
 ---
 title: "Region I Port Sampling Review"
-subtitle: '`r format(Sys.Date(), "%B %d, %Y")`'
+subtitle: 
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
 author: "Jocelyn Runnebaum, Andrew Olson, and Leland Hulbert"
 output: 
   word_document:
@@ -151,9 +152,9 @@ hagfish_samples <- samples_all %>%
 #Introduction
 This is a summary of the port sampling program for Region I. The species included in this review and current port sampling goals were obtained from a questionnaire developed by Leland Hulbert. Andrew Olson completed the questionnaire on behalf of Region I. Many of the port sampling goals were established based on Carlile (2005). Sampling goals were set in 2010 for Pacific cod, 2006 for NSEI sablefish, 2009 for SSEI sablefish, 2009 for lingcod, 2011 for yelloweye rockfish, 2006 for black rockfish, and 2016 for hagfish. 
 
-Most of the port samping in Region I is conducted in the directed fisheries by two staff in Juneau, three staff in Sitka, three staff in Petersburg, and one staff in Ketchikan who samples SSEI sablefish and hagfish in addition to salmon and crab. On occasion a staff member from Juneau may go to Ketchikan to help with port sampling, particularly for hagfish.
+Most of the port sampling in Region I is conducted in the directed fisheries by two staff in Juneau, three staff in Sitka, three staff in Petersburg, and one staff in Ketchikan who samples SSEI sablefish and hagfish in addition to salmon and crab. On occasion a staff member from Juneau may go to Ketchikan to help with port sampling, particularly for hagfish.
 
-To evaluate potential data gaps, landings per fishery were evaluated as the geometric mean and the geomtric standard deviation by port for the recent most five years of complete data (`r AVGING_YEARS`) from the CFEC gross earnings file. The geometric standard deviation is a multiplicative factor to express the deviation from the mean (Kirkwood, 1979), the upper and lower limits expressed in each figure represent the range of landings by port over the past five years. Landings were evaluated by calendar year to match the each regions Annual Management Reporting cycle and the opening of many groundfish fisheries. Landings include directed fishery and bycatch fishery landings, fish reported as discarded at sea or for personal use were removed from all data for this region. Each fishery is described as the species, area, and fishery location (state waters, parallel, or throughout the exclusive economic zone). The general fisheries described below are the state-water Pacific cod, state-water sablefish, lingcod, black rockfish, yelloweye rockfish, and hagfish. Data were subset in OceanAK by species, selected fields can be found in the source code of this analysis.
+To evaluate potential data gaps, landings per fishery were evaluated as the geometric mean and the geometric standard deviation by port for the recent most five years of complete data (`r AVGING_YEARS`) from the CFEC gross earnings file. The geometric standard deviation is a multiplicative factor to express the deviation from the mean (Kirkwood, 1979), the upper and lower limits expressed in each figure represent the range of landings by port over the past five years. Landings were evaluated by calendar year to match each region's Annual Management Reporting cycle and the opening of many groundfish fisheries. Landings include directed fishery and bycatch fishery landings, fish reported as discarded at sea or for personal use were removed from all data for this region. Each fishery is described as the species, area, and fishery location (state waters, parallel, or throughout the exclusive economic zone). The general fisheries described below are the state-water Pacific cod, state-water sablefish, lingcod, black rockfish, yelloweye rockfish, and hagfish. Data were subset in OceanAK by species, selected fields can be found in the source code of this analysis.
 
 ```{r map}
 map_path <- "../figures/"
@@ -189,8 +190,7 @@ Harvest Description = state managed groundfish
 (The remaining gear types are hand troll, longline, mechanical jigs, non-pelagic bottom trawl, and pots)    
 Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)  
 ```
-Pacific cod in the Eastern Gulf of Alaska Area are open from January 1 to December 31 unless closed by emergency order (5 AAC 28.115). Pacific cod in inside waters are managed with a Guideline Harvest Range and inseason management. The current sampling goal for NSEIPacific cod is 2750 Pacific cod,550 per area within NSEI, from Juneau where the majority of landings occur and the sampling goal for SSEI Pacific cod is 550 from Juneau. The two reference lines at 2750 and 550 indicate these sampling goals.
-
+Pacific cod in the Eastern Gulf of Alaska Area are open from January 1 to December 31 unless closed by emergency order (5 AAC 28.115). Pacific cod in inside waters are managed with a Guideline Harvest Range and in-season management. The current sampling goal for NSEI Pacific cod is 2750 Pacific cod,550 per area within NSEI, from Juneau where the majority of landings occur and the sampling goal for SSEI Pacific cod is 550 from Juneau. The two reference lines at 2750 and 550 indicate these sampling goals.  
 ```{r state_cod}
 #bring in State Cod data
 state_cod <- read.csv("../data/Region_I/pacific_cod.csv")
@@ -224,8 +224,7 @@ print(cod_samples_plot)
 ```
 
 ##Pacific Cod NSEI State Waters Fishery
-Pacific cod are managed by sub-region (not specificed in the regulations) to spatially distribute effort over the population. Miscellaneous finfish CFEC permits (category M) are considered the directed fisheries and sablefish (category C) and demersal shelf rockfish (DSR) (category Y) are considered bycatch fisheries.  Pacific cod can be kept as bait in other directed fisheries and weight is estimated on fishtickets, those data are not included as port samplers would not have access for sampling.
-
+Pacific cod are managed by sub-region (not specified in the regulations) to spatially distribute effort over the population. Miscellaneous finfish CFEC permits (category M) are considered the directed fisheries and sablefish (category C) and demersal shelf rockfish (DSR) (category Y) are considered bycatch fisheries. Pacific cod can be kept as bait in other directed fisheries and weight is estimated on fish tickets, those data are not included as port samplers would not have access for sampling.
 ```{r pcod_NSEI}
 pcod_nsei <- state_cod %>% 
     filter(mgmt_area_district == "NSEI") %>% 
@@ -291,7 +290,7 @@ print(pcod_nsei_plot)
 ```
 
 ##Pacific Cod SSEI State-Waters Fishery
-There is no idrected fishery for Pacific cod in the SSEI. Category M CFEC permits are considered the directed fisheries and halibut (category B), C, and Y permits are considered bycatch fisheries.
+There is no directed fishery for Pacific cod in the SSEI. Category M CFEC permits are considered the directed fisheries and halibut (category B), C, and Y permits are considered bycatch fisheries.
 ```{r pcod_SSEI, include = FALSE}
 
 pcod_ssei <- state_cod %>% 
@@ -439,7 +438,7 @@ print(sablefish_nsei_plot)
 ```
 
 ##Sablefish SSEI State Waters Fishery 
-Landings represent salefish harvested under the IFQ pot and longline fisheries only, bycatch of sablefish is not permissible in state waters. The SSEI sablefish fishery was open June 1 to August 15 with longline gear and September 1 to November 15 with pot gear. The SSEI directed sablefish fishery no longer separates seasons by gear type and the longline and pot seasons are a combined season from June 1 to November 15. The is only one floating catcher processor (the F/V Kruzof) for sablefish in Region I and is located in Seward. In January 2018 the Board of Fish allowed for the live sale of sablefish. Region I is in the process of developing a protocol for live sampling. 
+Landings represent sablefish harvested under the IFQ pot and longline fisheries only, bycatch of sablefish is not permissible in state waters. The SSEI sablefish fishery was open June 1 to August 15 with longline gear and September 1 to November 15 with pot gear. The SSEI directed sablefish fishery no longer separates seasons by gear type and the longline and pot seasons are a combined season from June 1 to November 15. The is only one floating catcher processor (the F/V Kruzof) for sablefish in Region I and is located in Seward. In January 2018 the Board of Fish allowed for the live sale of sablefish. Region I is in the process of developing a protocol for live sampling. 
 ```{r sablefish SSEI}
 #there should only be ifq landings for sablefish in ssei
 sablefish_ssei <- sablefish %>% 
@@ -907,7 +906,7 @@ print(lingcod_nsei_plot)
 ```
 
 ##Lingcod SSEIW
-Lingcod landed in Metlakala do not have a CFEC permit fishery code assigned because they are outside the jursidiction of the State. Category I CFEC permits are considered the directed fisheries and category B, M, Y, and S permits are considered bycatch fisheries.
+Lingcod landed in Metlakatla do not have a CFEC permit fishery code assigned because they are outside the  jurisdiction of the State. Category I CFEC permits are considered the directed fisheries and category B, M, Y, and S permits are considered bycatch fisheries.
 ```{r lingcod_sseiw}
 lingcod_sseiw <- lingcod %>% 
   filter(se_lingcod_mgmt_area == "L_SSEIW") %>% 
@@ -1137,7 +1136,7 @@ print(yelloweye_neso_plot)
 ```
 
 ##Yelloweye Rockfish CSEO
-The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, I, and M category permits are considered fisheries where yelloweye are caught as bycatch. The directed landings in Sitka occured in 2013. 
+The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, I, and M category permits are considered fisheries where yelloweye are caught as bycatch. The directed landings in Sitka occurred in 2013. 
 ```{r yelloweye_cseo}
 yelloweye_cseo <- yelloweye %>% 
   filter(mgmt_area== "CSEO") %>% 
@@ -1202,7 +1201,7 @@ print(yelloweye_cseo_plot)
 ```
 
 ##Yelloweye Rockfish SSEO
-The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, I, and M category permits are fisheries where yelloweye are caught as bycatch. Directed landings in Craig and Sitka occured in 2013.
+The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, I, and M category permits are fisheries where yelloweye are caught as bycatch. Directed landings in Craig and Sitka occurred in 2013.
 ```{r yelloweye_sseo}
 yelloweye_sseo <- yelloweye %>% 
   filter(mgmt_area== "SSEO") %>% 
@@ -1435,7 +1434,7 @@ print(black_samples_plot)
 ```
 
 ##Black Rockfish IBS
-This is a bycatch fisheries, with infrequent landings in areas without ADF&G staff available for sampling. This is a bycatch only fishery; B, and C category permits are fisheries where black rockfish are caught as bycatch. 
+This is a bycatch fishery, with infrequent landings in areas without ADF&G staff available for sampling. This is a bycatch only fishery; B, and C category permits are fisheries where black rockfish are caught as bycatch. 
 ```{r black_ibs}
 black_ibs <- black %>% 
   filter(se_lingcod_mgmt_area== "L_IBS") %>% 
@@ -1690,7 +1689,7 @@ print(black_cseo_plot)
 ```
 
 ##Black Rockfish SSEOC 
-The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, I, and M category permits are fisheries where black rockfish are caught as bycatch. Directed fishery landings occured in 2017.
+The directed demersal shelf rockfish fishery permits in SE are Y category permits. B, C, I, and M category permits are fisheries where black rockfish are caught as bycatch. Directed fishery landings occurred in 2017.
 ```{r black_sseo, include = FALSE}
 black_sseoc <- black %>% 
   filter(se_lingcod_mgmt_area== "L_SSEOC") %>% 
@@ -1755,7 +1754,7 @@ print(black_sseoc_plot)
 ```
 
 ##Black Rockfish NSEI **(Closed Fishery)**
-The State has landings obligations for black rockfish and no directed fishery has been established for black rockfish in this management area. However, there are Commissioner's permits that have been previously issued that account for the directed landings.Category B, C, I, and M permits are fisheries where black rockfish are caught as bycatch.  The last directed landings were in Craig, AK in 2013.
+The State has landings obligations for black rockfish and no directed fishery has been established for black rockfish in this management area. However, there are Commissioner's permits that have been previously issued that account for the directed landings. Category B, C, I, and M permits are fisheries where black rockfish are caught as bycatch.  The last directed landings were in Craig, AK in 2013.
 ```{r black_nsei}
 black_nsei <- black %>% 
   filter(se_lingcod_mgmt_area== "L_NSEI") %>% 
@@ -1818,7 +1817,7 @@ print(black_nsei_plot)
 ```
 
 ##Black Rockfish SSEIW **(Closed Fishery)**
-The State has landings obligations for black rockfish and no directed fishery has been established for black rockfish in this management area. However, there are Commissioner's permits that have been previously issued that account for the directed landings. Category B, C, I, and M permits are fisheries where black rockfish are caught as bycatch. The last directed landings in Ketchican, AK were in 2015. No bycatch landings were made in 2017.
+The State has landings obligations for black rockfish and no directed fishery has been established for black rockfish in this management area. However, there are Commissioner's permits that have been previously issued that account for the directed landings. Category B, C, I, and M permits are fisheries where black rockfish are caught as bycatch. The last directed landings in Ketchikan, AK were in 2015. No bycatch landings were made in 2017.
 ```{r black_ssei}
 black_sseiw <- black %>% 
   filter(se_lingcod_mgmt_area== "L_SSEIW") %>% 
@@ -1933,7 +1932,7 @@ hagfish <- hagfish %>%
 # kable(hagfish, col.names = c("Port", "Mean Directed Landings (lbs)", "Upper","Lower", "Mean Bycatch (lsb)", "Upper", "Lower"))
 ```
 
-The the reference line at 550 indicates the sampling goal for all State waters in Souteast.
+The reference line at 550 indicates the sampling goal for all State waters in Southeast.
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
 
 hagfish_samples_plot <- ggplot(data = hagfish_samples)+
