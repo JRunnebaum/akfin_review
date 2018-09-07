@@ -17,15 +17,13 @@ knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message = FALSE, error=FALSE)
 
 library(tidyverse)
 library(lubridate)
-library(ggplot2)
-library(dplyr) #group_by()
 library(knitr)
-library(tidyr) #drop_na()
-library(png)
 library(grDevices)
 library(EnvStats)
-library(ggplot2)
 library(extrafont)
+library(ggrepel)
+library(ggthemes)
+
 # windowsFonts(Times=windowsFont("Calibri"))
 theme_sleek <- function(base_size = 12, base_family = "Calibri") {
   half_line <- base_size/2
@@ -56,7 +54,27 @@ theme_sleek <- function(base_size = 12, base_family = "Calibri") {
 theme_set(theme_sleek())
 
 options(scipen = 999) #turns off scientific notation
+
+
+# Depends on dplyr
+tickr <- function(
+  data, # dataframe
+  var, # column of interest
+  to # break point definition 
+){
+  
+  VAR <- enquo(var) # makes VAR a dynamic variable
+  
+  data %>% 
+    distinct(!!VAR) %>%
+    ungroup(!!VAR) %>% 
+    mutate(labels = ifelse(!!VAR %in% seq(to * round(min(!!VAR) / to), max(!!VAR), to),
+                           !!VAR, "")) %>%
+    select(breaks = UQ(VAR), labels)
+}
+
 ```
+
 
 ```{r global objects}
 FISCAL_YEAR <- 2019 #this is the fiscal year when new allocations would begin
@@ -64,14 +82,20 @@ FISCAL_YEAR <- 2019 #this is the fiscal year when new allocations would begin
 #these are the current years included to generate the average landings per port to calculate the proportion of GOA landings for use in allocations. CFEC gross earnings data are used for the calculations, but are not are one year behind. Therefore, the most current year available in CFEC is used for this analysis.
 AVGING_YEARS <- data.frame(2013, 2014, 2015, 2016, 2017)
 
+#Theme colors for ggplot
+# PAL <- ggthemes::canva_pal("Summer sunflower")(4)
+# PAL <- ggthemes::canva_pal("Grecian holiday")(4)
+PAL <- ggthemes::canva_pal("Muted and antique")(4)
+
+
 ```
 
 
 ```{r port_sampling_samples}
-samples <- read.csv("../data/Region_I/groundfish_ port_sampling_seak_2013_2017.csv")
+samples <- read.csv("data/Region_I/groundfish_ port_sampling_seak_2013_2017.csv")
 
 samples_all <- samples %>% 
-  mutate(year = as.factor(year)) %>% 
+  # mutate(year = as.factor(year)) %>% 
   mutate(species_use = case_when(species_code == 110 ~ "cod",
                                  species_code == 710 ~ "sablefish",
                                  species_code == 130 ~ "lingcod",
@@ -89,7 +113,7 @@ cod_samples <- samples_all %>%
   filter(species_use == "cod") %>% 
   droplevels() %>% 
   mutate(target = case_when(mgmt_area == "NSEI" ~ 2750,
-                            mgmt_area == "NSEI" ~ 550)) %>% 
+                            mgmt_area == "SSEI" ~ 550)) %>% 
   mutate(target = as.numeric(target))
 
   
@@ -157,7 +181,7 @@ Most of the port sampling in Region I is conducted in the directed fisheries by 
 To evaluate potential data gaps, landings per fishery were evaluated as the geometric mean and the geometric standard deviation by port for the recent most five years of complete data (`r AVGING_YEARS`) from the CFEC gross earnings file. The geometric standard deviation is a multiplicative factor to express the deviation from the mean (Kirkwood, 1979), the upper and lower limits expressed in each figure represent the range of landings by port over the past five years. Landings were evaluated by calendar year to match each region's Annual Management Reporting cycle and the opening of many groundfish fisheries. Landings include directed fishery and bycatch fishery landings, fish reported as discarded at sea or for personal use were removed from all data for this region. Each fishery is described as the species, area, and fishery location (state waters, parallel, or throughout the exclusive economic zone). The general fisheries described below are the state-water Pacific cod, state-water sablefish, lingcod, black rockfish, yelloweye rockfish, and hagfish. Data were subset in OceanAK by species, selected fields can be found in the source code of this analysis.
 
 ```{r map}
-map_path <- "../figures/"
+map_path <- "figures/"
 include_graphics(paste0(map_path,"Region_I/2018_Commercial_Groundfish_SE_Reporting_Areas.jpg"))
 ```
 
@@ -193,7 +217,7 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 Pacific cod in the Eastern Gulf of Alaska Area are open from January 1 to December 31 unless closed by emergency order (5 AAC 28.115). Pacific cod in inside waters are managed with a Guideline Harvest Range and in-season management. The current sampling goal for NSEI Pacific cod is 2750 Pacific cod,550 per area within NSEI, from Juneau where the majority of landings occur and the sampling goal for SSEI Pacific cod is 550 from Juneau. The two reference lines at 2750 and 550 indicate these sampling goals.  
 ```{r state_cod}
 #bring in State Cod data
-state_cod <- read.csv("../data/Region_I/pacific_cod.csv")
+state_cod <- read.csv("data/Region_I/pacific_cod.csv")
 state_cod <- state_cod %>% 
   mutate(date_landed = mdy(date_landed),
          year = year(date_landed),
@@ -218,10 +242,54 @@ cod_samples_plot <- ggplot(data = cod_samples)+
   ylab("Number of Samples\n")+
   xlab("Year\n")+
   ggtitle("Pacific Cod Port Sampling") 
-ggsave(plot = cod_samples_plot, file = paste0("../figures/Region_I/pcod_samples.png"))
+ggsave(plot = cod_samples_plot, file = paste0("figures/Region_I/pcod_samples.png"))
 
 print(cod_samples_plot)
 ```
+
+##Proportion of Pacific Cod Landed and Sampled
+```{r proportion_cod_sampled}
+pcod <- state_cod %>% 
+    filter(mgmt_area_district == "NSEI" | mgmt_area_district == "SSEI") %>% 
+    select(year, pounds, mgmt_area_district) %>% 
+    group_by(year, mgmt_area_district) %>%
+    summarise_all(funs(sum)) %>% 
+    droplevels() %>% 
+    rename(mgmt_area = mgmt_area_district) 
+    
+
+prop_cod <- full_join(pcod, cod_samples, by = c("year", "mgmt_area")) 
+
+#merge landings and sample data
+prop_cod <- prop_cod %>%  
+  mutate(species_use = ifelse(is.na(species_use), "cod", species_use),
+         samples = ifelse(is.na(samples), 0, samples),
+         target = ifelse(is.na(target), 550, target)) %>% 
+  add_tally(pounds) %>% 
+  rename(total_pounds = n) %>% 
+  add_tally(samples) %>% 
+  rename(total_samp = n) %>% 
+  mutate(sampled = samples/total_samp,
+         landed = pounds/total_pounds) %>% 
+  gather(key = "type",
+         value = "proportion",
+         sampled, landed)
+
+prop_cod_plot <- ggplot(data = prop_cod, 
+                        aes(x = year, y = proportion, color = mgmt_area, shape = type))+
+  geom_point(size = 4)+
+  geom_line(lwd = 1)+
+  ylim(0, 1)+
+  xlim(2013, 2017)+
+  scale_colour_manual(values = colorRampPalette(PAL)(n_distinct(prop_cod$mgmt_area)))+
+  ylab("Proportion\n")+
+  xlab("Year\n")+
+  ggtitle("Proportion Pacific Cod Landed and Sampled") 
+ggsave(plot = prop_cod_plot, file = paste0("figures/Region_I/prop_pcod.png"))
+
+print(prop_cod_plot)
+```
+
 
 ##Pacific Cod NSEI State Waters Fishery
 Pacific cod are managed by sub-region (not specified in the regulations) to spatially distribute effort over the population. Miscellaneous finfish CFEC permits (category M) are considered the directed fisheries and sablefish (category C) and demersal shelf rockfish (DSR) (category Y) are considered bycatch fisheries. Pacific cod can be kept as bait in other directed fisheries and weight is estimated on fish tickets, those data are not included as port samplers would not have access for sampling.
@@ -232,8 +300,7 @@ pcod_nsei <- state_cod %>%
     mutate(type = case_when(grepl("M ", cfec_permit_fishery) ~ "directed",
          grepl("B ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
          grepl("C ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch",
-         grepl("Y ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%   
-    mutate(type = ifelse(cfec_permit_fishery == "M 05G", "bycatch", type)) %>% 
+         grepl("Y ", cfec_permit_fishery, ignore.case = TRUE) ~ "bycatch")) %>%     mutate(type = ifelse(cfec_permit_fishery == "M 05G", "bycatch", type)) %>% 
     select(year, port_code, type, pounds) %>% 
     group_by(year, port_code, type) %>%
     summarise_all(funs(sum)) %>%
@@ -263,9 +330,9 @@ pcod_nsei_plot <- ggplot(data = pcod_nsei, aes(y = mean_landed, x = port_code, f
     xlab("Port Landed\n")+
     ggtitle("NSEI Pacific Cod State-Waters Fishery")
     
-ggsave(plot = pcod_nsei_plot, file = paste0("../figures/Region_I/pcod_nsei.png"))
+ggsave(plot = pcod_nsei_plot, file = paste0("figures/Region_I/pcod_nsei.png"))
 
-#to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
+#to look at the data in a table divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 
 # bycatch <- pcod_nsei %>% 
 #     filter(type == "bycatch") %>% 
@@ -330,7 +397,7 @@ pcod_ssei_plot <- ggplot(data = pcod_ssei, aes(y = mean_landed, x = port_code, f
   xlab("Port Landed\n")+
   ggtitle("SSEI Pacific Cod State-Waters Fishery")
 
-ggsave(plot = pcod_ssei_plot, file = paste0("../figures/Region_I/pcod_ssei.png"))
+ggsave(plot = pcod_ssei_plot, file = paste0("figures/Region_I/pcod_ssei.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- pcod_ssei %>%
@@ -364,7 +431,7 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 ```
 
 ```{r sablefish}
-sablefish <- read.csv("../data/Region_I/region1_sablefish.csv")
+sablefish <- read.csv("data/Region_I/region1_sablefish.csv")
 sablefish <- sablefish %>% 
   mutate(date_landed = mdy(date_landed),
          year = year(date_landed),
@@ -387,10 +454,49 @@ sablefish_samples_plot <- ggplot(data = sablefish_samples)+
   xlab("Year\n")+
   ggtitle("Sablefish Port Sampling")
 
-ggsave(plot = sablefish_samples_plot, file = paste0("../figures/Region_I/sablefish_samples.png"))
+ggsave(plot = sablefish_samples_plot, file = paste0("figures/Region_I/sablefish_samples.png"))
 
 print(sablefish_samples_plot)
 ```
+
+##Proportion Sablefish Landed and Sampled
+```{r proportion sablefish}
+sablefish_prop <- sablefish %>% 
+    filter(mgmt_area == "NSEI" | 
+           mgmt_area == "SSEI") %>% 
+    select(year, pounds, mgmt_area) %>% 
+    group_by(year, mgmt_area) %>%
+    summarise_all(funs(sum)) %>% 
+    droplevels() 
+    
+prop_sablefish <- full_join(sablefish_prop, sablefish_samples, by = c("year", "mgmt_area")) 
+
+prop_sablefish <- prop_sablefish %>%  
+  add_tally(pounds) %>% 
+  rename(total_pounds = n) %>% 
+  add_tally(samples) %>% 
+  rename(total_samp = n) %>% 
+  mutate(sampled = samples/total_samp,
+         landed = pounds/total_pounds) %>% 
+  gather(key = "type",
+         value = "proportion",
+         sampled, landed)
+
+prop_sablefish_plot <- ggplot(data = prop_sablefish, 
+                        aes(x = year, y = proportion, color = mgmt_area,shape = type))+
+ geom_point(size = 4)+
+  geom_line(lwd = 1)+
+  ylim(0, 1)+
+  xlim(2013, 2017)+
+  scale_colour_manual(values = colorRampPalette(PAL)(n_distinct(prop_sablefish$mgmt_area)))+
+  ylab("Proportion Sampled\n")+
+  xlab("Year\n")+
+  ggtitle("Proportion Sablefish Landed and Sampled") 
+ggsave(plot = prop_sablefish_plot, file = paste0("figures/Region_I/prop_sablefish_samples.png"))
+
+print(prop_sablefish_plot)
+```
+
 
 ##Sablefish NSEI State-Waters Fishery
 Landings represent direct harvest of sablefish from the longline fishery only (C61A CFEC permits), bycatch of sablefish is not permissible in state waters. The NSEI sablefish fishery is open August 15 to November 15. 
@@ -428,7 +534,7 @@ sablefish_nsei_plot <- ggplot(data = sablefish_nsei, aes(y = mean_landed, x = po
   xlab("Port Landed\n")+
   ggtitle("NSEI Sablefish State Waters Fishery")
 
-ggsave(plot = sablefish_nsei_plot, file = paste0("../figures/Region_I/sablefish_nsei.png"))
+ggsave(plot = sablefish_nsei_plot, file = paste0("figures/Region_I/sablefish_nsei.png"))
 
 # kable(sablefish_nsei, col.names = c("Port", "Mean Landings (lbs)", "Upper", "Lower"))
 ```
@@ -473,7 +579,7 @@ sablefish_ssei_plot <- ggplot(data = sablefish_ssei, aes(y = mean_landed, x = po
     xlab("Port Landed\n")+
     ggtitle("SSEI Sablefish State Waters Fishery")
 
-ggsave(plot = sablefish_ssei_plot, file = paste0("../figures/Region_I/sablefish_ssei.png"))
+ggsave(plot = sablefish_ssei_plot, file = paste0("figures/Region_I/sablefish_ssei.png"))
 
 # kable(sablefish_ssei, col.names = c("Port", "Mean Landings (lbs)", "Upper", "Lower"))
 ```
@@ -490,7 +596,7 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 ```
 
 ```{r lingcod}
-lingcod <- read.csv("../data/Region_I/regionI_lingcod.csv") 
+lingcod <- read.csv("data/Region_I/regionI_lingcod.csv") 
 lingcod <- lingcod %>%   
   mutate(date_landed = mdy(date_landed),
          year = year(date_landed),
@@ -512,10 +618,62 @@ lingcod_samples_plot <- ggplot(data = lingcod_samples)+
   xlab("Year\n")+
   ggtitle("Lingcod Port Sampling") 
 
-ggsave(plot = lingcod_samples_plot, file = paste0("../figures/Region_I/lingcod_samples.png"))
+ggsave(plot = lingcod_samples_plot, file = paste0("figures/Region_I/lingcod_samples.png"))
 
 print(lingcod_samples_plot)
 ```
+
+##Proportion Lingcod Landed and Sampled
+```{r proportion lingcod}
+lingcod_prop <- lingcod %>% 
+    filter(se_lingcod_mgmt_area == "L_IBS" |
+           se_lingcod_mgmt_area == "L_EYKT" |
+           se_lingcod_mgmt_area == "L_NSEO" |
+           se_lingcod_mgmt_area == "L_CSEO" | 
+           se_lingcod_mgmt_area == "L_SSEOC" |
+           se_lingcod_mgmt_area == "L_NSEI" |
+           se_lingcod_mgmt_area == "L_SSEIW") %>% 
+    # rename(mgmt_area = se_lingcod_mgmt_area) %>%   
+    mutate(mgmt_area = substring(se_lingcod_mgmt_area, regexpr("_", se_lingcod_mgmt_area) + 1)) %>% 
+    select(year, pounds, mgmt_area) %>% 
+    group_by(year, mgmt_area) %>%
+    summarise_all(funs(sum)) %>% 
+    droplevels()  
+  
+  
+prop_lingcod <- full_join(lingcod_prop, lingcod_samples, by = c("year", "mgmt_area")) 
+
+prop_lingcod <- prop_lingcod %>%  
+  mutate(species_use = ifelse(is.na(species_use), "lingcod", species_use),
+         samples = ifelse(is.na(samples), 0, samples),
+         target = ifelse(is.na(target), 550, target)) %>% 
+  add_tally(pounds) %>% 
+  rename(total_pounds = n) %>% 
+  add_tally(samples) %>% 
+  rename(total_samp = n) %>% 
+  mutate(sampled = samples/total_samp,
+         landed = pounds/total_pounds) 
+  # gather(key = "type",
+         # value = "proportion",
+         # sampled, landed)
+  
+kable(prop_lingcod)
+# prop_lingcod_plot <- ggplot(data = prop_lingcod, 
+#                         aes(x = year, y = proportion, color = mgmt_area,shape = type))+
+#   geom_point(size = 4)+
+#   geom_line(size = 1)+
+#   ylim(0, 1)+
+#   xlim(2013,2017)+
+#   scale_colour_manual(values = colorRampPalette(PAL)(n_distinct(prop_lingcod$mgmt_area)))+
+#   ylab("Proportion Sampled\n")+
+#   xlab("Year\n")+
+#   ggtitle("Proportion Lingcod Landed and Sampled") 
+# ggsave(plot = prop_lingcod_plot, file = paste0("../figures/Region_I/prop_lingcod_samples.png"))
+# 
+# print(prop_lingcod_plot)
+```
+
+
 
 ##Lingcod IBS 
 Category I CFEC permits are considered the directed fisheries and category B, C, and M permits are considered bycatch fisheries.
@@ -556,7 +714,7 @@ lingcod_ibs_plot <- ggplot(data = lingcod_ibs, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("Lingcod IBS Fishery")
 
-ggsave(plot = lingcod_ibs_plot, file = paste0("../figures/Region_I/lingcod_ibs.png"))
+ggsave(plot = lingcod_ibs_plot, file = paste0("figures/Region_I/lingcod_ibs.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- lingcod_ibs %>% 
@@ -621,7 +779,7 @@ lingcod_eykt_plot <- ggplot(data = lingcod_eykt, aes(y = mean_landed, x = port_c
   xlab("Port Landed\n")+
   ggtitle("Lingcod EYKT Fishery")
 
-ggsave(plot = lingcod_eykt_plot, file = paste0("../figures/Region_I/lingcod_eykt.png"))
+ggsave(plot = lingcod_eykt_plot, file = paste0("figures/Region_I/lingcod_eykt.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- lingcod_eykt %>% 
@@ -686,7 +844,7 @@ lingcod_nseo_plot <- ggplot(data = lingcod_nseo, aes(y = mean_landed, x = port_c
   xlab("Port Landed\n")+
   ggtitle("Lingcod NSEO Fishery")
 
-ggsave(plot = lingcod_nseo_plot, file = paste0("../figures/Region_I/lingcod_nseo.png"))
+ggsave(plot = lingcod_nseo_plot, file = paste0("figures/Region_I/lingcod_nseo.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- lingcod_nseo %>% 
@@ -750,7 +908,7 @@ lingcod_cseo_plot <- ggplot(data = lingcod_cseo, aes(y = mean_landed, x = port_c
   ylab("Mean Harvest (lbs)\n")+
   xlab("Port Landed\n")+
   ggtitle("Lingcod CSEO Fishery")
-  ggsave(lingcod_cseo_plot, file = paste0("../figures/Region_I/lingcod_cseo.png"))
+  ggsave(lingcod_cseo_plot, file = paste0("figures/Region_I/lingcod_cseo.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- lingcod_cseo %>% 
@@ -815,7 +973,7 @@ lingcod_sseoc_plot <- ggplot(data = lingcod_sseoc, aes(y = mean_landed, x = port
   xlab("Port Landed\n")+
   ggtitle("Lingcod SSEOC Fishery")
 
-ggsave(plot = lingcod_sseoc_plot, file = paste0("../figures/Region_I/lingcod_sseoc.png"))
+ggsave(plot = lingcod_sseoc_plot, file = paste0("figures/Region_I/lingcod_sseoc.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- lingcod_sseoc %>% 
@@ -880,7 +1038,7 @@ lingcod_nsei_plot <- ggplot(data = lingcod_nsei, aes(y = mean_landed, x = port_c
   xlab("Port Landed\n")+
   ggtitle("Lingcod NSEI Fishery")
 
-ggsave(plot = lingcod_nsei_plot, file = paste0("../figures/Region_I/lingcod_nsei.png"))
+ggsave(plot = lingcod_nsei_plot, file = paste0("figures/Region_I/lingcod_nsei.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- lingcod_nsei %>% 
@@ -945,7 +1103,7 @@ lingcod_sseiw_plot <- ggplot(data = lingcod_sseiw, aes(y = mean_landed, x = port
   xlab("Port Landed\n")+
   ggtitle("Lingcod SSEIW Fishery")
 
-ggsave(plot = lingcod_sseiw_plot, file = paste0("../figures/Region_I/lingcod_sseiw.png"))
+ggsave(plot = lingcod_sseiw_plot, file = paste0("figures/Region_I/lingcod_sseiw.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- lingcod_sseiw %>% 
@@ -979,7 +1137,7 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 ```
 
 ```{r yelloweye}
-yelloweye <- read.csv("../data/Region_I/region1_yelloweye.csv") 
+yelloweye <- read.csv("data/Region_I/region1_yelloweye.csv") 
 yelloweye <- yelloweye %>%   
   mutate(date_landed = mdy(date_landed),
          year = year(date_landed),
@@ -1001,8 +1159,56 @@ yelloweye_samples_plot <- ggplot(data = yelloweye_samples)+
   xlab("Year\n")+
   ggtitle("Yelloweye Port Sampling")
 
-ggsave(plot = yelloweye_samples_plot, file = paste0("../figures/Region_I/yelloweye_samples.png"))
+ggsave(plot = yelloweye_samples_plot, file = paste0("figures/Region_I/yelloweye_samples.png"))
 print(yelloweye_samples_plot)
+```
+
+#Proprotion of Yelloweye Rockfish Landed and Sampled
+```{r proportion yelloweye}
+yelloweye_prop <- yelloweye %>% 
+    filter(mgmt_area == "EYKT" |
+           mgmt_area == "NSEO" |
+           mgmt_area == "CSEO" | 
+           mgmt_area == "SSEO" |
+           mgmt_area == "NSEI" |
+           mgmt_area == "SSEI") %>%   
+    select(year, pounds, mgmt_area) %>% 
+    group_by(year, mgmt_area) %>%
+    summarise_all(funs(sum)) %>% 
+    droplevels()  
+  
+  
+prop_yelloweye <- full_join(yelloweye_prop, yelloweye_samples, by = c("year", "mgmt_area")) 
+
+prop_yelloweye <- prop_yelloweye %>%  
+  mutate(species_use = ifelse(is.na(species_use), "yelloweye", species_use),
+         samples = ifelse(is.na(samples), 0, samples),
+         target = ifelse(is.na(target), 550, target)) %>% 
+  add_tally(pounds) %>% 
+  rename(total_pounds = n) %>% 
+  add_tally(samples) %>% 
+  rename(total_samp = n) %>% 
+  mutate(sampled = samples/total_samp,
+         landed = pounds/total_pounds)  
+  # gather(key = "type",
+  # value = "proportion",
+  # sampled, landed)
+
+kable(prop_yelloweye)
+ 
+# prop_yelloweye_plot <- ggplot(data = prop_yelloweye,
+#                         aes(x = year, y = proportion, color = mgmt_area,shape = type))+
+#  geom_point(size = 4)+
+#   geom_line(size = 1)+
+#   ylim(0, 1)+
+#   xlim(2013, 2017)+
+#   scale_colour_manual(values = colorRampPalette(PAL)(n_distinct(prop_yelloweye$mgmt_area)))+
+#   ylab("Proportion Sampled\n")+
+#   xlab("Year\n")+
+#   ggtitle("Proportion Yelloweye Rockfish Landed and Sampled")
+# ggsave(plot = prop_yelloweye_plot, file = paste0("figures/Region_I/prop_yelloweye_samples.png"))
+# 
+# print(prop_yelloweye_plot)
 ```
 
 ##Yelloweye Rockfish EYKT
@@ -1045,7 +1251,7 @@ yelloweye_eykt_plot <- ggplot(data = yelloweye_eykt, aes(y = mean_landed, x = po
   xlab("Port Landed\n")+
   ggtitle("EYKT Yelloweye Rockfish Fishery")
 
-ggsave(plot = yelloweye_eykt_plot, file = paste0("../figures/Region_I/yelloweye_eykt.png"))
+ggsave(plot = yelloweye_eykt_plot, file = paste0("figures/Region_I/yelloweye_eykt.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- yelloweye_eykt %>% 
@@ -1110,7 +1316,7 @@ yelloweye_neso_plot <- ggplot(data = yelloweye_nseo, aes(y = mean_landed, x = po
   xlab("Port Landed\n")+
   ggtitle("NSEO Yelloweye Rockfish Fishery")
 
-ggsave(plot = yelloweye_neso_plot, file = paste0("../figures/Region_I/yelloweye_nseo.png"))
+ggsave(plot = yelloweye_neso_plot, file = paste0("figures/Region_I/yelloweye_nseo.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- yelloweye_nseo %>% 
@@ -1175,7 +1381,7 @@ yelloweye_cseo_plot <- ggplot(data = yelloweye_cseo, aes(y = mean_landed, x = po
   xlab("Port Landed\n")+
   ggtitle("CSEO Yelloweye Rockfish Fishery")
 
-ggsave(plot = yelloweye_cseo_plot, file = paste0("../figures/Region_I/yelloweye_cseo.png"))
+ggsave(plot = yelloweye_cseo_plot, file = paste0("figures/Region_I/yelloweye_cseo.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- yelloweye_cseo %>% 
@@ -1240,7 +1446,7 @@ yelloweye_sseo_plot <- ggplot(data = yelloweye_sseo, aes(y = mean_landed, x = po
   xlab("Port Landed")+
   ggtitle("SSEO Yelloweye Rockfish Fishery\n")
 
-ggsave(plot = yelloweye_sseo_plot, file = paste0("../figures/Region_I/yelloweye_sseo.png"))
+ggsave(plot = yelloweye_sseo_plot, file = paste0("figures/Region_I/yelloweye_sseo.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- yelloweye_sseo %>% 
@@ -1306,7 +1512,7 @@ yelloweye_nsei_plot <- ggplot(data = yelloweye_nsei, aes(y = mean_landed, x = po
   xlab("Port Landed\n")+
   ggtitle("NSEI Yelloweye Rockfish Fishery")
 
-ggsave(plot = yelloweye_nsei_plot, file = paste0("../figures/Region_I/yelloweye_nsei.png"))
+ggsave(plot = yelloweye_nsei_plot, file = paste0("figures/Region_I/yelloweye_nsei.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- yelloweye_nsei %>% 
@@ -1373,7 +1579,7 @@ yelloweye_ssei_plot <- ggplot(data = yelloweye_ssei, aes(y = mean_landed, x = po
   xlab("Port Landed\n")+
   ggtitle("NSEI Yelloweye Rockfish Fishery")
 
-ggsave(plot = yelloweye_ssei_plot, file = paste0("../figures/Region_I/yelloweye_ssei.png"))
+ggsave(plot = yelloweye_ssei_plot, file = paste0("figures/Region_I/yelloweye_ssei.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- yelloweye_ssei %>% 
@@ -1406,7 +1612,7 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 ```
 
 ```{r black}
-black <- read.csv("../data/Region_I/region1_black_rockfish.csv") 
+black <- read.csv("data/Region_I/region1_black_rockfish.csv") 
 black <- black %>%   
   mutate(date_landed = mdy(date_landed),
          year = year(date_landed),
@@ -1422,15 +1628,71 @@ black_samples_plot <- ggplot(data = black_samples)+
   geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
   geom_hline(yintercept = 550)+
   ylim(0,1500) +
+  xlim(2013,2017)+
   # scale_fill_grey() + 
   # scale_color_grey() +
   ylab("Number of Samples\n")+
   xlab("Year\n")+
   ggtitle("Black Rockfish Port Sampling")
 
-ggsave(plot = black_samples_plot, file = paste0("../figures/Region_I/black_rockfish_samples.png"))
+ggsave(plot = black_samples_plot, file = paste0("figures/Region_I/black_rockfish_samples.png"))
 
 print(black_samples_plot)
+```
+
+#Proportion Black Rockfish Landed and Sampled
+```{r proportion black rockfish}
+black_rf_prop <- black %>% 
+    filter(se_lingcod_mgmt_area == "L_IBS" |
+           se_lingcod_mgmt_area == "L_EYKT" |
+           se_lingcod_mgmt_area == "L_NSEO" |
+           se_lingcod_mgmt_area == "L_CSEO" | 
+           se_lingcod_mgmt_area == "L_SSEOC" |
+           se_lingcod_mgmt_area == "L_NSEI" |
+           se_lingcod_mgmt_area == "L_SSEIW") %>% 
+    # rename(mgmt_area = se_lingcod_mgmt_area) %>%   
+    mutate(mgmt_area = substring(se_lingcod_mgmt_area, regexpr("_", se_lingcod_mgmt_area) + 1)) %>% 
+    select(year, pounds, mgmt_area) %>% 
+    group_by(year, mgmt_area) %>%
+    summarise_all(funs(sum)) %>% 
+    droplevels()  
+  
+  
+prop_black_rf <- full_join(black_rf_prop, black_samples, by = c("year", "mgmt_area")) 
+
+prop_black_rf <- prop_black_rf %>%  
+  mutate(species_use = ifelse(is.na(species_use), "black_rockfish", species_use),
+         samples = ifelse(is.na(samples), 0, samples),
+         target = ifelse(mgmt_area == "IBS"| 
+                         mgmt_area == "EYKT"|
+                         mgmt_area == "NSEO"|
+                         mgmt_area == "CSEO"|
+                         mgmt_area == "SSEOC", 550, NA)) %>% 
+  add_tally(pounds) %>% 
+  rename(total_pounds = n) %>% 
+  add_tally(samples) %>% 
+  rename(total_samp = n) %>% 
+  mutate(sampled = samples/total_samp,
+         landed = pounds/total_pounds) 
+  # gather(key = "type",
+  # value = "proportion",
+  # sampled, landed)
+
+kable(prop_black_rf)
+
+# prop_black_plot <- ggplot(data = prop_black_rf, 
+#                         aes(x = year, y = proportion, color = mgmt_area,shape = type))+
+#   geom_point(size = 4)+
+#   geom_line(size = 1)+
+#   ylim(0,1)+
+#   xlim(2013, 2017)+
+#   scale_colour_manual(values = colorRampPalette(PAL)(n_distinct(prop_black_rf$mgmt_area)))+
+#   ylab("Proportion Sampled\n")+
+#   xlab("Year\n")+
+#   ggtitle("Proportion Black Rockfish Landed and Sampled") 
+# ggsave(plot = prop_black_plot, file = paste0("figures/Region_I/prop_black_samples.png"))
+# 
+# print(prop_black_plot)
 ```
 
 ##Black Rockfish IBS
@@ -1470,7 +1732,7 @@ black_ibs_plot <- ggplot(data = black_ibs, aes(y = mean_landed, x = port_code, f
   xlab("Port Landed\n")+
   ggtitle("L_IBS Black Rockfish Fishery")
 
-ggsave(plot = black_ibs_plot, file = paste0("../figures/Region_I/black_rf_ibs.png"))
+ggsave(plot = black_ibs_plot, file = paste0("figures/Region_I/black_rf_ibs.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- black_ibs %>% 
@@ -1534,7 +1796,7 @@ black_eykt_plot <- ggplot(data = black_eykt, aes(y = mean_landed, x = port_code,
   xlab("Port Landed\n")+
   ggtitle("L_EYKT Black Rockfish Fishery")
 
-ggsave(plot = black_eykt_plot, file = paste0("../figures/Region_I/black_rf_eykt.png"))
+ggsave(plot = black_eykt_plot, file = paste0("figures/Region_I/black_rf_eykt.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- black_eykt %>% 
@@ -1598,7 +1860,7 @@ black_nseo_plot <- ggplot(data = black_nseo, aes(y = mean_landed, x = port_code,
   xlab("Port Landed\n")+
   ggtitle("L_NSEO Black Rockfish Fishery")
 
-ggsave(plot = black_nseo_plot, file = paste0("../figures/Region_I/black_rf_nseo.png"))
+ggsave(plot = black_nseo_plot, file = paste0("figures/Region_I/black_rf_nseo.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- black_nseo %>% 
@@ -1663,7 +1925,7 @@ black_cseo_plot <- ggplot(data = black_cseo, aes(y = mean_landed, x = port_code,
   xlab("Port Landed\n")+
   ggtitle("L_CSEO Black Rockfish Fishery")
 
-ggsave(plot = black_cseo_plot, file = paste0("../figures/Region_I/black_rf_cseo.png"))
+ggsave(plot = black_cseo_plot, file = paste0("figures/Region_I/black_rf_cseo.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- black_cseo %>% 
@@ -1728,7 +1990,7 @@ black_sseoc_plot <- ggplot(data = black_sseoc, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("L_SSEOC Black Rockfish Fishery")
 
-ggsave(plot = black_sseoc_plot, file = paste0("../figures/Region_I/black_rf_sseoc.png"))
+ggsave(plot = black_sseoc_plot, file = paste0("figures/Region_I/black_rf_sseoc.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- black_sseoc %>% 
@@ -1791,7 +2053,7 @@ black_nsei_plot <- ggplot(data = black_nsei, aes(y = mean_landed, x = port_code,
   xlab("Port Landed\n")+
   ggtitle("L_NSEI Black Rockfish Fishery (Closed Fishery)")
 
-ggsave(plot = black_nsei_plot, file = paste0("../figures/Region_I/black_nsei.png"))
+ggsave(plot = black_nsei_plot, file = paste0("figures/Region_I/black_nsei.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- black_nsei %>% 
@@ -1855,7 +2117,7 @@ black_sseiw_plot <- ggplot(data = black_sseiw, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("L_SSEIW Black Rockfish Fishery (Closed Fishery)")
 
-ggsave(plot = black_sseiw_plot, file = paste0("../figures/Region_I/black_sseiw.png"))
+ggsave(plot = black_sseiw_plot, file = paste0("figures/Region_I/black_sseiw.png"))
 
 #to look at the data in table form divide to directed and bycatch df then join together. Couldn't figure out spread for this situation because there are 3 columns that need to follow (mean landed, upper, and lower)
 # bycatch <- black_sseiw %>% 
@@ -1888,7 +2150,7 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 There are two species of hagfish that are recorded by ADF&G, Pacific hagfish (212) and black hagfish (202). Black hagfish is the predominant species caught in SEAK and the code was added late in 2016. Prior to this everything was coded as 212 Pacific hagfish even though this is most likely the incorrect species. Since 2016, hagfish have been prosecuted in state-waters by two individuals in the spring and fall with a Commissioner's permit. During peak landings port samplers from Juneau, trained at hagfish identification, will go to Ketchikan to sample the directed fishery. The current sampling goal is 550 fish from Ketchikan. Bycatch of Pacific hagfish are in SMO and RPP fisheries. 
 ```{r hagfish}
 
-hagfish <- read.csv("../data/Region_I/region1_hagfish.csv")
+hagfish <- read.csv("data/Region_I/region1_hagfish.csv")
 
 hagfish <- hagfish %>% 
     mutate(date_landed = mdy(date_landed),
@@ -1939,13 +2201,14 @@ hagfish_samples_plot <- ggplot(data = hagfish_samples)+
   geom_point(aes(x = year, y = samples, color = year, shape = mgmt_area), size = 3)+
   geom_hline(yintercept = 550)+
   ylim(0,1500)+
+  xlim(2013,2017)+
   # scale_fill_grey() + 
   # scale_color_grey() +
   ylab("Number of Samples")+
   xlab("Year")+
   ggtitle("Hagfish Port Sampling") 
 
-ggsave(plot = hagfish_samples_plot, file = paste0("../figures/Region_I/hag_samples.png"))
+ggsave(plot = hagfish_samples_plot, file = paste0("figures/Region_I/hag_samples.png"))
 
 print(hagfish_samples_plot)
 ```
@@ -1968,7 +2231,56 @@ hagfish_plot <- ggplot(data = hagfish, aes(y = mean_landed, x = port_code, fill 
   xlab("Port Landed\n")+
   ggtitle("Black Hagfish Directed Fishery and Pacific Hagfish Bycatch")
 
-ggsave(plot = hagfish_plot, file = paste0("../figures/Region_I/hagfish.png"))
+ggsave(plot = hagfish_plot, file = paste0("figures/Region_I/hagfish.png"))
 
 print(hagfish_plot)
 ```
+
+##Proportion Hagfish Landed and Sampled
+```{r proportion_hagfish_sampled}
+hagfish <- read.csv("data/Region_I/region1_hagfish.csv")
+hagfish <- hagfish %>% 
+    filter(mgmt_area == "NSEI" | 
+           mgmt_area == "SSEI") %>% 
+    mutate(date_landed = mdy(date_landed),
+         year = year(date_landed)) %>% 
+    mutate(year = as.numeric(year)) %>% 
+    filter(year %in% AVGING_YEARS) %>%
+    select(year, pounds, mgmt_area) %>% 
+    group_by(year, mgmt_area) %>%
+    summarise_all(funs(sum)) %>% 
+    droplevels()
+    
+
+prop_hagfish <- full_join(hagfish, hagfish_samples, by = c("year", "mgmt_area")) 
+
+prop_hagfish <- prop_hagfish %>%  
+  mutate(species_use = ifelse(is.na(species_use), "hagfish", species_use),
+         samples = ifelse(is.na(samples), 0, samples),
+         target = ifelse(is.na(target), 550, target)) %>%
+   add_tally(pounds) %>% 
+  rename(total_pounds = n) %>% 
+  add_tally(samples) %>% 
+  rename(total_samp = n) %>% 
+  mutate(sampled = samples/total_samp,
+         landed = pounds/total_pounds) %>% 
+  gather(key = "type",
+         value = "proportion",
+         sampled, landed)
+
+
+prop_hagfish_plot <- ggplot(data = prop_hagfish, 
+                        aes(x = year, y = proportion, color = mgmt_area, shape = type))+
+  geom_point(size = 4)+
+  geom_line(lwd = 1)+
+  ylim(0, 1)+
+  xlim(2013, 2017)+
+  scale_colour_manual(values = colorRampPalette(PAL)(n_distinct(prop_hagfish$mgmt_area)))+
+  ylab("Proportion Sampled\n")+
+  xlab("Year\n")+
+  ggtitle("Proportion Hagfish Landed and Sampled") 
+ggsave(plot = prop_hagfish_plot, file = paste0("figures/Region_I/prop_hagfish_samples.png"))
+
+print(prop_hagfish_plot)
+```
+
