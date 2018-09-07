@@ -1,6 +1,11 @@
 .Rproj.user
 .Rhistory
 .RData
+*.Rproj
 .Ruserdata
 data
+figures
+references
 *.png
+*.docx
+*.pptx

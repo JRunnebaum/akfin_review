@@ -1,0 +1,151 @@
+---
+title: "AKFIN Port Sampling Review Summary"
+author: "Jocelyn Runnebaum"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  word_document:
+    reference_docx: word-styles-reference.docx
+# output: html_document
+---
+
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message = FALSE, error=FALSE)
+```
+
+```{r packages}
+
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(dplyr) #group_by()
+library(knitr)
+library(tidyr) #drop_na()
+library(png)
+library(grDevices)
+library(EnvStats)
+library(ggplot2)
+library(extrafont)
+# windowsFonts(Times=windowsFont("Calibri"))
+theme_sleek <- function(base_size = 11, base_family = "Calibri") {
+  half_line <- base_size/2
+  theme_light(base_size = 11, base_family = "Calibri") +
+    theme(
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.ticks.length = unit(half_line / 2.2, "pt"),
+      strip.background = element_rect(fill = NA, colour = NA),
+      strip.text.x = element_text(colour = "black"),
+      strip.text.y = element_text(colour = "black"),
+      # axis.text = element_text(colour = "grey30"),
+      #axis.title = element_text(colour = "grey30"),
+      #legend.title = element_text(colour = "grey30"),#, size = rel(0.9)
+      legend.title = element_blank(),
+      panel.border = element_rect(fill = NA),#, colour = "grey70", size = 1),
+      legend.key.size = unit(0.9, "lines"),
+      #legend.text = element_text(size = rel(0.7)),#, colour = "grey30"),
+      legend.key = element_rect(colour = NA, fill = NA),
+      legend.background = element_rect(colour = NA, fill = NA)#,
+      #plot.title = element_text(colour = "grey30"),#, size = rel(1),
+      #plot.subtitle = element_text(colour = "grey30")#, size = rel(.85),
+     
+      
+    )
+}
+
+theme_set(theme_sleek())
+
+options(scipen = 999) #turns off scientific notation
+```
+
+```{r global objects, include = FALSE}
+FISCAL_YEAR <- 2019 #this is the fiscal year when new allocations would begin
+```
+
+#Summary
+The groundfish port sampling allocations for Region I, II, and IV are being reviewed for the State Fiscal Year `r FISCAL_YEAR`. The objective of the review is to ensure the sampling goals are proportional to landings. The species reviewed and port sampling goals were obtained from a questionnaire developed by Leland Hulbert. Regional staff provided details regarding species sampled, sampling goals, and descriptions of each region's groundfish port sampling program. 
+
+The AKFIN objectives for the groundfish port sampling program, as defined by the proposal, are:
+
+a.	Provide user support and reporting assistance to eLandings users.  
+b.	Collect fish tickets from processors and buyers.  
+c.	Review electronic landing reports for compliance with federal and state reporting, bycatch regulations and coding accuracy, and edit as necessary.  
+d.	Batch and edit eLandings data for import into ADF&G fish ticket database systems.  
+e.	Validate unique trip number and harvest code assignment; identify, report, and account for overages; and identify delinquent fish tickets.  
+f.	Dockside sampling of groundfish landings to collect biological data, including size, sex, maturity, weights, and otoliths or other biological age structures for age determination.  
+g.	Collect, edit, and process groundfish fishery logbooks for each landing.  
+h.	Collect tags recovered from fish; edit and process associated information.  
+
+
+Based on these defined objectives, there are other important considerations for the distribution of AKFIN funding that will likely need to be taken into consideration as well. This includes the number of harvesters in a region, which will impact the number of eLandings users and the amount of support a region provides to harvesters for that program. The number of landings and the amount of data that need to be cleaned and batched, which will impact staff time spent on AKFIN data. The number of staff hours dedicated to aging and the importance of the aging data to regional management is also an important consideration for distributing AKFIN funds. 
+
+The current allocation of AKFIN funding for the groundfish port sampling programs are defined below. The FY19 indirect rate is now 22.76%, which will change the indirect fees below which were established on the 22.74% indirect rate.  
+
+| Region    | Direct   | Indirect  | Total    |
+| ------    | :------- | :-------: | -------: |
+| Southeast | $342,999 | $77,998   | $423,689 |
+| Central   | $262,718 | $59,742   | $340,288 |
+| Westward  | $394,620 | $89,737   | $499,493 |  
+
+In general, the sampling programs aim to coincide sampling timing and duration with the peak timing of the fisheries. Sampling efforts that coincide with the peak landings of a fishery run the risk of capturing a limited temporal distribution since the sampling efforts tend to be at the beginning of the season, particularly for Pacific cod. However, the number of full-time port samplers is a function of optimizing the available funding; the logistics of hiring and deploying samplers to ports to coincide with peak landings; and keeping samplers busy enough as a full-time sampler at a given location. Each region has developed a sampling program that functions within these constraints, and efforts are made to continuously evolve the programs in response to the fisheries, the harvesters, and the processors. As a result, there are differences between each region’s groundfish port sampling programs. For instance, Region IV does not sample the parallel cod fishery, but Region II does. Region IV conducts their own Pacific cod aging program, Region II conducts aging for Walleye pollock, and Region I does not conduct aging but collects age structures. Additionally, Region I samples at a finer scale than the other two regions, with port sampling goals defined at the sector level for lingcod and black rockfish and the sub-area for Pacific cod. Regions II and IV have sampling goals defined by area, but Region IV defines sampling goals by port for the South Alaska Peninsula Pacific cod to capture the spatial distribution in deliveries. 
+
+This could be a good opportunity for the Regions to review their port sampling efforts with regard to: 1) the volume of landings at unsampled ports, and 2) the biological realism of their port sampling goals.  
+
+The Region I sampling program currently focuses all Pacific cod sampling efforts in Juneau. Much of the NSEI Pacific cod is landed in Juneau but no landings of SSEI Pacific cod have occurred at that port between 2013 and 2017. The largest proportion of SSEI state-water Pacific cod, an average 13,000 pounds per year, is landed in Ketchikan, currently an unsampled port for Pacific cod. The sampling goal for NSEI Pacific cod is 2750, 550 per sub-area within NSEI, but samples have consistently been under 1000 between 2013 and 2017. Sampling goals for SSEI Pacific cod have not been achieved since 2013. It may be possible to scale the number of samples down to 550 per subdistrict under the current spatial management structure (Carlile, 2005). Before determining if the current sampling goals are too high, it is advisable to first evaluate the stock structure of Pacific cod in Southeast Alaska to determine if the geographic barriers in the region have resulted in distinct stocks within NSEI and between NSEI and SSEI that would require such fine scale sampling efforts. Andrew Olson suggested movement and genetic studies as a realistic first step in understanding the stock structure of Pacific cod in Southeast Alaska.  
+
+In Region II, the port sampling program exceeds the port sampling goals for Pacific cod from the Cook Inlet and Prince William Sound Areas by an order of magnitude. It may be worthwhile to evaluate the temporal distribution of samples for this region to ensure that one part of the fishing year is not being over sampled. These samples are provided to the federal assessment authors, but it appears these data are not being fully utilized within the stock assessment. This region is able to sample the ports with the highest landings for all species. Unmet sampling goals are for fisheries with minimal effort or sporadic landings that make it difficult to sample during the times of year that a dedicated sampler is not employed.  
+
+In Region IV, an average of 12 million pounds of state-water Pacific cod from the Dutch Harbor subdistrict is landed in the port of Dutch Harbor. There is currently no groundfish port sampling program in Dutch Harbor as the position was absorbed into the crab sampling program before 2005. The Dutch Harbor subdistrict state-water fishery began in 2014 and Dutch Harbor is consistently the main port of landing. Pacific cod from Dutch Harbor are also landed in Akutan and to inshore floating catcher processors in volume. Pacific cod from the Aleutian Islands sub-district are landed in volume to Adak and to inshore floating processors. At a minimum, it may be worthwhile while to consider implementing sampling efforts for groundfish in Dutch Harbor. Additionally, sampling efforts of the in short floating processors may also be worth considering. The Region IV port sampling goals for black rockfish in Kodiak, Chignik, and the South Alaska Peninsula are 1000 each. Port samples for Kodiak black rockfish have been close to this sampling goal, even exceeding it in 2016 and 2017. However, Chignik and South Alaska Peninsula sampling has been minimal to non-existent. This is a result of rockfish deliveries occurring outside of the Pacific cod season and therefore not matching up with the deployment of samplers to Sand Point and King Cove. ADF&G is currently in the process of developing a stock assessment for black rockfish and yelloweye, so these data will be important. However, a sampling goal of 1000 may not be necessary for black rockfish to meet the data needs of the assessment.
+Each region has a pulse on the timing of the fisheries and when to deploy sampling effort. However, it maybe be a good exercise for each region to demonstrate how the sampling timing aligns with the historical timing of the fishery. This exercise could help in the development of a formal operational plan, not currently in place for any of the region’s groundfish port sampling programs. Developing such a plan may provide a clear path forward for implementing sampling in ports with a high proportion of regional landings and that are biologically representative to meet each region’s management needs.
+
+
+
+```{r sampling_region_i, eval = FALSE}
+
+samples <- read.csv("../data/Region_I/groundfish_ port_sampling_seak_2013_2017.csv")
+# targets <- read.csv("../data/Region_I/port_sampling_target_region_i.csv")
+
+samples_all <- samples %>% 
+  mutate(species_use = case_when(species_code == 110 ~ "cod",
+                                 species_code == 710 ~ "sablefish",
+                                 species_code == 130 ~ "lingcod",
+                                 species_code == 145 ~ "yelloweye",
+                                 species_code == 142 ~ "black_rockfish",
+                                 species_code == 212 ~ "hagfish",
+                                 species_code == 202 ~ "hagfish"))%>% 
+  group_by(year, mgmt_area, species_use, species_code) %>% 
+  summarise(samples = n()) %>% 
+  mutate(samples = as.numeric(samples)) 
+
+cod_samples <- samples_all %>%
+  filter(species_code == 110) %>% 
+  droplevels()
+table(cod_samples$mgmt_area)
+
+sablefish_samples <- samples_all %>%
+  filter(species_code == 710) %>% 
+  droplevels()
+table(sablefish_samples$mgmt_area)
+
+lingcod_samples <- samples_all %>%
+  filter(species_code == 130) %>% 
+  droplevels()
+table(lingcod_samples$mgmt_area)
+
+yelloweye_samples <- samples_all %>%
+  filter(species_code == 145) %>% 
+  droplevels()
+table(yelloweye_samples$mgmt_area)
+
+black_samples <- samples_all %>%
+  filter(species_code == 142) %>% 
+  droplevels()
+table(black_samples$mgmt_area)
+
+hagfish_samples <- samples_all %>%
+  filter(species_code == 212 | species_code == 202) %>% 
+  droplevels()
+table(hagfish_samples$mgmt_area)
+
+```
+
+
