@@ -1,7 +1,9 @@
 ---
 title: "AKFIN Port Sampling Review Summary"
-author: "Jocelyn Runnebaum"
+subtitle: "**DATA IN THIS REPORT ARE CONFIDENTIAL**"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
+author: "Jocelyn Runnebaum"
+contact: "jocelyn.runnebaum@alaska.gov"
 output:
   word_document:
     reference_docx: word-styles-reference.docx

@@ -1,8 +1,8 @@
 ---
 title: "Region IV Port Sampling Review"
-subtitle: '`r format(Sys.Date(), "%B %d, %Y")`'
+subtitle: "**DATA IN THIS REPORT ARE CONFIDENTIAL**"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
 author: "Jocelyn Runnebaum, Natura Richardson, Kayla Bevaart, Sonya Elmejjati, Miranda Westphal, Leland Hulbert, Nathaniel Nichols, and Mark Stichert"
-contact: "jocelyn.runnebaum@alaska.gov"
 output: 
   word_document:
     reference_docx: word-styles-reference.docx
