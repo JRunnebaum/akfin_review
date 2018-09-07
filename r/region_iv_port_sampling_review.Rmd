@@ -1,8 +1,8 @@
 ---
 title: "Region IV Port Sampling Review"
+subtitle: '`r format(Sys.Date(), "%B %d, %Y")`'
 author: "Jocelyn Runnebaum, Natura Richardson, Kayla Bevaart, Sonya Elmejjati, Miranda Westphal, Leland Hulbert, Nathaniel Nichols, and Mark Stichert"
 contact: "jocelyn.runnebaum@alaska.gov"
-date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output: 
   word_document:
     reference_docx: word-styles-reference.docx
@@ -15,15 +15,12 @@ knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message = FALSE, error=FALSE)
 ```{r, include = FALSE}
 library(tidyverse)
 library(lubridate)
-library(ggplot2)
-library(dplyr) #group_by()
 library(knitr)
-library(tidyr) #drop_na()
 library(png)
 library(grDevices)
 library(EnvStats)
-library(ggplot2)
 library(extrafont)
+
 # windowsFonts(Times=windowsFont("Calibri"))
 theme_sleek <- function(base_size = 12, base_family = "Calibri") {
   half_line <- base_size/2
@@ -60,14 +57,20 @@ FISCAL_YEAR <- 2019 #this is the fiscal year when new allocations would begin
 
 #these are the current years included to generate the average landings per port to calculate the proportion of GOA landings for use in allocations. CFEC gross earnings data are used for the calculations, but are not are one year behind. Therefore, the most current year available in CFEC is used for this analysis.
 AVGING_YEARS <- data.frame(2013, 2014, 2015, 2016, 2017)
+
+#Theme colors for ggplot
+# PAL <- ggthemes::canva_pal("Summer sunflower")(4)
+# PAL <- ggthemes::canva_pal("Grecian holiday")(4)
+PAL <- ggthemes::canva_pal("Muted and antique")(4)
+
 ```
 
 ```{r sampling data, include = FALSE}
-samples <- read.csv("../data/Region_IV/yearly_samples.csv")
+samples <- read.csv("data/Region_IV/yearly_samples.csv")
 
 samples_all <- samples %>% 
   filter(year %in% AVGING_YEARS) %>% 
-  mutate(year = as.factor(year)) %>% 
+  # mutate(year = as.factor(year)) %>% 
   dplyr::rename(species_code = species) %>% 
   mutate(species = case_when(species_code == 110 ~ "cod",
                                  species_code == 710 ~ "sablefish",
@@ -113,12 +116,12 @@ dark_samples <- samples_all %>%
                             mgmt_area == "M" ~ 500)) %>% 
   mutate(target = as.numeric(target))
 ```
+#Introduction
+This is a summary of the Region IV port sampling program. The objective of the review is to ensure the sampling goals are proportional to landings. The species reviewed and port sampling goals were obtained from a questionnaire developed by Leland Hulbert. Natura Richardson completed the questionnaire on behalf of Region IV. The port sampling goals for Region IV were established in 2006 based on Carlile (2005). To reach the defined sampling goals (specified below), the port sampling program  aims to collect samples during the peak of a fishing season to maximize sampling effort within funding constraints. Three seasonal samplers are hired every year, if there is a Tanner crab fishery they are hired for January 15 through April, if there is no Tanner crab fishery they are hired from February through April to sample the height of the state-water Pacific cod fishery.  
 
-This is a summary of the Region IV port sampling program. The objective of the review is to ensure the sampling goals are proportional to landings. The species reviewed and current port sampling goals were obtained from a questionnaire developed by Leland Hulbert. Natura Richardson completed the questionnaire on behalf of Region IV. The port sampling goals for Region IV were established in 2006 based on Carlile (2005). To reach the defined sampling goals (specified below), the port sampling program  aims to collect samples during the peak of a fishing season to maximize sampling effort within funding constraints. Three seasonal samplers are hired every year, if there is a Tanner crab fishery they are hired for January 15 through April, if there is no Tanner crab fishery they are hired from February through April to sample the height of the state-water Pacific cod fishery.  
+State-water Pacific cod is the predominate focus for the Region IV groundfish port sampling program, with one sampler stationed each at Sand Point, King Cove, and Kodiak for the peak of the Pacific cod fishery. The Kodiak and Dutch Harbor state fishery opens seven days after the federal fishery closes. The Chignik fishery opens seven days after the federal fishery closes or March 1st, whichever is later. The South Alaska Peninsula opens 7 days after the federal closure or March 7th, whichever is later. If the federal fishery is opened earlier than what has been typical in the past, then the samplers may miss landings from the Pacific cod state-waters fishery. Samplers at King Cove and Sand Point return to Kodiak after reaching their sampling goals, usually within three weeks. Sampling objectives can be met within this window because of the typically higher catches from pot fisheries that dominate the landings. Samplers are not kept at Sand Point or King Cove for more than 3-weeks, otherwise their salary location would have to be changed from Kodiak to their sampling port, incurring more costs for sampling. Additionally, Sand Point and King Cove each have one processor, while Kodiak has seven, allowing for more species and more processors to be sampled when all three samplers are based in Kodiak. After April samplers usually move to salmon, and groundfish sampling is conducted by Kodiak office staff for the remainder of the year. Port sampling decreases when dedicated technicians are not on call for deliveries are made outside regular working hours or the office is not notified for a delivery, which primarily impacts the rockfish fisheries. 
 
-State-water Pacific cod is the predominate focus for the Region IV groundfish port sampling program, with one sampler stationed each at Sand Point, King Cove, and Kodiak for the peak of the Pacific cod fishery. The state fishery opens seven days after the federal fishery closes. If the federal fishery is opened earlier, or later, than what has been typical in the past, then the samplers may miss landings from the Pacific cod state-waters fishery. Samplers at King Cove and Sand Point return to Kodiak after reaching their sampling goals, usually within three weeks. Sampling objectives can be met in wihtin this window because of the typically higher catches from pot fisheries that dominate the landings. Samplers are not kept at Sand Point or King Cove for more than 3-weeks, otherwise their salary location would have to be changed from Kodiak to their sampling port, potentially incurring more costs for sampling. Additionally, Sand Point and King Cove each have one processor, while Kodiak has seven, allowing for more species and more processors to be sampled when all three samplers are based in Kodiak. After April samplers usually move to salmon and groundfish sampling is conducted by Kodiak office staff for the remainder of the year. Port sampling decreases when dedicated technicians are not on call for deliveries are made outside regular working hours or the office is not notifed for a delievery, which primarily impacts the rockfish fisheries. 
-
-To evaluate potential data gaps, landings per fishery were evaluated as the geometric mean and the geomtric standard deviation by port for the recent most five years of complete data (`r AVGING_YEARS`) from the CFEC gross earnings file. The geometric standard deviation is a multiplicative factor to express the deviation from the mean (Kirkwood, 1979), the upper and lower limits expressed in each figure represent the range of landings by port over the past five years. Landings were evaluated by by calendar year to match the each regions Annual Management Reporting cycle and the opening of many groundfish fisheries. Landings include directed fishery and bycatch fishery landings, fish reported as discarded at sea or for personal use were removed from all data. Each fishery is described as the species, area, and fishery location (state waters, parallel, or throughout the exclusive economic zone). The general fisheries described below are the state water Pacific cod, parallel Pacific cod, sablefish, lingcod, black rockfsih, and dark rockfish. (Atka mackerel was on the port sampling questionaire but is a fully federally managed fishery and was removed from this analysis). Data were subset in OceanAK by species, selected fields can be found in the source code of this analysis.
+To evaluate potential data gaps, landings per fishery were evaluated as the geometric mean and the geometric standard deviation by port for the recent most five years of complete data (`r AVGING_YEARS`) from the CFEC gross earnings file. The geometric standard deviation is a multiplicative factor to express the deviation from the mean (Kirkwood, 1979), the upper and lower limits expressed in each figure represent the range of landings by port over the past five years. Landings were evaluated by calendar year to match each region's Annual Management Reporting cycle and the opening of many groundfish fisheries. Landings include directed fishery and bycatch fishery landings, fish reported as discarded at sea or for personal use were removed from all data. Each fishery is described as the species and area. Fisheries were subset by their management type as either a state-water fishery, a parallel fishery, or state management of a fishery throughout the EEZ (0-200 nmi). The general fisheries described below are the state-water Pacific cod, parallel Pacific cod, sablefish, lingcod, black rockfish, and dark rockfish. (Atka mackerel was on the port sampling questionnair but is a fully federally managed fishery and was removed from this analysis). Data were subset in OceanAK by species, selected fields can be found in the source code of this analysis.
 
 ```{r eval=FALSE}
 -date_landed                    
@@ -142,17 +145,17 @@ To evaluate potential data gaps, landings per fishery were evaluated as the geom
 ```
 
 ```{r map_groundfish}
-map_path <- "../figures/"
+map_path <- "figures/"
 include_graphics(paste0(map_path,"Region_IV/GF_EHKLMO_StateVsFederal_11x17_20151015.jpg"))
 ```
 
 ```{r map_cod}
-map_path <- "../figures/"
+map_path <- "figures/"
 include_graphics(paste0(map_path,"Region_IV/GF_PCod_KLMO_StateVsFederal_11x17_20151015.jpg"))
 ```
 
 #State-Water Cod Fisheries 
-Steve Barbeaux is the lead stock assessment author for GOA Pacific cod, which includes state-water and parallel fisheries. All model variants presented to the Plan Team in 2017 were single-sex age-based models (SS3) that use length based selectivity (Barbeaux et al., 2017). Sonya Elejjati provides the Region IV port sampling data every year to the assessment author. In 2017, the ADF&G port sampling data were included in the stock assessment to augment missing observer data. Grant Thompson is the lead assssment author for BSAI Pacific cod, which impacts the Dutch Harbor and Aleutian Islands Pacific cod subdistricts. Region IV conducts their own aging for Pacific cod, but it is unclear how the aging data are used.  
+Steve Barbeaux is the lead stock assessment author for GOA Pacific cod, which includes state-water and parallel fisheries. All model variants presented to the Plan Team in 2017 were single-sex age-based models (SS3) that use length-based selectivity (Barbeaux et al., 2017). Sonya Elmejjati provides the Region IV port sampling data every year to the assessment author. In 2017, the ADF&G port sampling data were included in the stock assessment to augment missing observer data. Grant Thompson is the lead assessment author for BSAI Pacific cod, which impacts the Dutch Harbor and Aleutian Islands Pacific cod subdistricts. Region IV conducts their own aging for Pacific cod, but it is unclear how the aging data are used.  
 
 ```{r eval=FALSE}
 Species code = 110  
@@ -162,9 +165,9 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 
 ```
 
-```{r state_cod, include = F, warnings = FALSE}
+```{r state_cod}
 #for all state-water fisheries only
-state_cod <- read.csv("../data/Region_IV/pacific_cod.csv")
+state_cod <- read.csv("data/Region_IV/pacific_cod.csv")
 state_cod <- state_cod %>% 
   filter(harvest_code == 80) %>% 
   filter(mgmt_prgm_code == "SMPC" )%>% 
@@ -174,24 +177,25 @@ state_cod <- state_cod %>%
   filter(year %in% AVGING_YEARS) %>% 
   filter(disposition_code != 95 & disposition_code != 98)
 
+```
+
+```{r area o cod}
+
 #for the aleutian islands and dutch harbor sub districts for both state-waters and parallel fisheries
-area_o_cod <- read.csv("../data/Region_IV/pcod_ai_dh_statewaters.csv")
+area_o_cod <- read.csv("data/Region_IV/pcod_ai_dh_statewaters.csv")
 
 area_o_cod <- area_o_cod %>% 
   mutate(date_landed = mdy(date_landed),
          year = year(date_landed),
          fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
-  filter(year %in% AVGING_YEARS) %>% 
-  filter(disposition_code != 95 & disposition_code != 98) 
+  filter(year %in% AVGING_YEARS) %>%
+  filter(disposition_code != 95 & disposition_code != 98)
 
 #ai stat areas for subsetting dutch harbor and ai subdistricts
 ai_stat_areas <- seq(from = 705200, to = 895300, by = 1)
-
-
-
 ```
 
-The Area K sampling goals for Kodiak Pacific cod is 1000 samples, split evenly between the pot and jig fisheries. The sampling goal for Chignik Pacific Cod is 500 samples from Chignik Port. The sampling goal for South Alaska Peninsula Pacific cod is 500, split between King Cove (250) and Sand Point (250). No sampling objectives have been set for the Dutch Harbor and Aleutian Islands subdistricts.  The reference line at 1000 indicates the sampling goal for the Kodiak (K) and the reference line at 500 indicates the sampling goal for Chignik (L) and the South Alaska Peninsula (M).
+The Area K sampling goal for Kodiak Pacific cod is 1000 samples, split evenly between the pot and jig fisheries. The sampling goal for Chignik Pacific Cod is 500 samples from the Chignik Area. The sampling goal for South Alaska Peninsula Pacific cod is 500, split between King Cove (250) and Sand Point (250) to capture the spatial extent and predominate ports of landing. No sampling objectives have been set for the Dutch Harbor and Aleutian Islands subdistricts. The reference line at 1000 indicates the sampling goal for the Kodiak Area (K) and the reference line at 500 indicates the sampling goals for Chignik (L) and the South Alaska Peninsula (M) Areas.
 ```{r fig.width = 5.5, fig.height = 3.5 ,fig.align = "center"}
 
 cod_samples_plot <- ggplot(data = cod_samples)+
@@ -204,10 +208,53 @@ cod_samples_plot <- ggplot(data = cod_samples)+
   ylab("Number of Samples\n")+
   xlab("Year\n")+
   ggtitle("Pacific Cod Port Sampling") 
-ggsave(plot = cod_samples_plot, file = paste0("../figures/Region_IV/pcod_samples.png"))
+ggsave(plot = cod_samples_plot, file = paste0("figures/Region_IV/pcod_samples.png"))
 
 print(cod_samples_plot)
 ```
+
+##Proportion of Pacific Cod Landed and Sampled
+```{r proportion_cod_sampled}
+pcod <- state_cod %>% 
+    filter(mgmt_area == "K" | 
+           mgmt_area == "L"|
+           mgmt_area == "M") %>% 
+    select(year, pounds, mgmt_area) %>% 
+    group_by(year, mgmt_area) %>%
+    summarise_all(funs(sum)) %>% 
+    droplevels() %>% 
+    rename(mgmt_area = mgmt_area) 
+    
+
+prop_cod <- full_join(pcod, cod_samples, by = c("year", "mgmt_area")) 
+
+#merge landings and sample data
+prop_cod <- prop_cod %>%  
+  add_tally(pounds) %>% 
+  rename(total_pounds = n) %>% 
+  add_tally(samples) %>% 
+  rename(total_samp = n) %>% 
+  mutate(sampled = samples/total_samp,
+         landed = pounds/total_pounds) %>% 
+  gather(key = "type",
+         value = "proportion",
+         sampled, landed)
+
+prop_cod_plot <- ggplot(data = prop_cod, 
+                        aes(x = year, y = proportion, color = mgmt_area, shape = type))+
+  geom_point(size = 4)+
+  geom_line(lwd = 1)+
+  ylim(0, 1)+
+  xlim(2013, 2017)+
+  scale_colour_manual(values = colorRampPalette(PAL)(n_distinct(prop_cod$mgmt_area)))+
+  ylab("Proportion\n")+
+  xlab("Year\n")+
+  ggtitle("Proportion Pacific Cod Landed and Sampled") 
+ggsave(plot = prop_cod_plot, file = paste0("figures/Region_IV/prop_pcod.png"))
+
+print(prop_cod_plot)
+```
+
 
 ##Pacific Cod Kodiak State-Water Fishery (Area K)
 The jig fishery sampling goal is intended to extend the temporal resolution of data collected from the fishery since sampling goals are met quickly within the pot fishery. However, minimum sampling objectives by gear type may not be met when the jig fishery is slow. 
@@ -246,7 +293,7 @@ pcod_kod_sw_plot <- ggplot(data = pcod_kod_sw, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("Kodiak Pacific Cod State-Waters")
 
-ggsave(plot = pcod_kod_sw_plot, file = paste0("../figures/Region_IV/pcod_kod_sw.png"))
+ggsave(plot = pcod_kod_sw_plot, file = paste0("figures/Region_IV/pcod_kod_sw.png"))
 ```
 
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
@@ -254,7 +301,7 @@ print(pcod_kod_sw_plot)
 ```
 
 ##Pacific Cod Chignik State-Water Fishery (Area L)
-Deliveries are typically split between Sand Point and Kodiak, **which does not match the sampling goal of 500 samples from Chignik port.** Data gaps occur when samples are landed at Sand Point after the samplers leave. Sampling goals were not met in 2014 or 2015 because deliveries were being made to a floating processor and authorization was not given to samplers to be onboard for sampling. This issue was resolved and sampling goals were met in 2016 and 2017. The majority of the landings for Chignik cod are predominately made to an inshore stationary floating processor. 
+Deliveries are typically split between Sand Point and Kodiak. Data gaps occur when samples are landed at Sand Point after the samplers leave. Sampling goals were not met in 2014 or 2015 because deliveries were being made to a floating processor and authorization was not given to samplers to be onboard for sampling. This issue was resolved and sampling goals were met in 2016 and 2017. The majority of the landings for Chignik cod are predominately made to an inshore stationary floating processor. 
 ```{r pcod_chignik_state_waters}
 
 #subset chignik state-waters pcod fishery
@@ -290,7 +337,7 @@ pcod_chg_sw_plot <- ggplot(data = pcod_chg_sw, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("Chignik Pacific Cod State-Waters")
 
-ggsave(plot = pcod_chg_sw_plot, file = paste0("../figures/Region_IV/pcod_chg_sw.png"))
+ggsave(plot = pcod_chg_sw_plot, file = paste0("figures/Region_IV/pcod_chg_sw.png"))
 
 ```
 
@@ -335,7 +382,7 @@ pcod_sap_sw_plot <- ggplot(data = pcod_sap_sw, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("South Alaska Peninsula Pacific Cod State-Waters")
 
-ggsave(plot = pcod_sap_sw_plot, file = paste0("../figures/Region_IV/pcod_sap_sw.png"))
+ggsave(plot = pcod_sap_sw_plot, file = paste0("figures/Region_IV/pcod_sap_sw.png"))
 
 ```
 
@@ -344,28 +391,42 @@ print(pcod_sap_sw_plot)
 ```
 
 ##Pacific Cod Dutch Harbor Subdistrict State-Water Fishery (Area O) 
-Dutch Harbor currently does not having a groundfish port sampler, the positions were absorbed into the crab port sampling program prior to crab rationalization in 2005.
+Dutch Harbor currently does not have a groundfish port sampler, the positions were absorbed into the crab port sampling program prior to crab rationalization in 2005.
 
-The fishery opens on Jan 1 in state waters between 175 degrees W and 178 degrees W.  The rest of AI state waters is open to parallel fishing during this time.  The entire fishery (west of 170 W long) opens with a federal trigger and changes year to year (generally sometime in February or March). When the entire AI is open, there is no parallel Pacific cod fishing. The AI regulations for openings and closures have changed many times over the years, with the most recent change in 2015/16.  
+The Bering Sea District consists of all state waters of Alaska in the BSAI Area north of the latitude of Cape Sarichef (54° 36′ N lat). The Dutch Harbor Subdistrict (DHS) consists of state waters in the Aleutian Islands District east of 170° W long and state waters of the Bering Sea District west of 164° W long and south of 55° 30′ N lat, except DHS is closed to fishing in Steller sea lion *Eumetopias jubatus* (SSL) protection areas south of 53° 06.11′ N lat.  
 
-To subset the Dutch Harbor subdistrict, the stat areas between 705200 and 999999 were removed from Area O landings to capture landings in what was defined as the Dutch Harbor subdistrict at the time of landing.
+The Dutch Harbor Subdistrict state-waters fishery opens with a federal trigger usually late-January to late-February. During the state-waters fishery, the parallel is only closed to pot vessels fishing Pacific cod that are 60 feet or less OAL. The parallel remains open for all other gear types, vessel lengths, and species, even in waters where the state-waters fishery is prosecuted.  
+
+To subset the Dutch Harbor subdistrict, the stat areas between 645410 and 685303 were removed from Area O landings to capture landings in what was defined as the Dutch Harbor subdistrict at the time of landing. The following dates were also used to subset the fishery based on timing. 
+
+2014: 02/11/2014 to 5/31/2014  
+2015: 02/09/2015 to 04/04/2015  
+2016: 02/12/2016 to 04/24/2016  
+2017: 02/09/2017 to 04/11/2017  
 
 ```{r eval=FALSE}
-Species code = 110  
 Management program code = SMPC      
-Stat Area does not equal 705200 to 999999
-Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)      
+Stat Area between 645410 and 685303
+Regulation management area != K, L, or M
 
 ```
   
 
 ```{r pcod_DHBS_state_waters}
 #to subset the dutch harbor sub-district in area o, remove the AI stat areas to get this
-pcod_dhbs_sw <- area_o_cod %>% 
-  mutate(stat_area = as.numeric(stat_area)) %>% 
-  filter(!(stat_area %in% ai_stat_areas)) %>% 
+pcod_dhbs_sw <- read.csv("data/Region_IV/dutch_cod.csv")
+
+pcod_dhbs_sw <- pcod_dhbs_sw %>% 
   filter(mgmt_prgm_code == "SMPC") %>% 
-  select(year, port_code, pounds) %>% 
+  mutate(date_landed = mdy(date_landed)) %>% 
+  mutate(year = case_when(
+          between(date_landed, as.Date("2014-02-11"), as.Date("2014-05-31")) ~ 2014,
+          between(date_landed, as.Date("2015-02-09"), as.Date("2015-04-04")) ~ 2015, 
+          between(date_landed, as.Date("2016-02-12"), as.Date("2016-04-24")) ~ 2016, 
+          between(date_landed, as.Date("2017-02-09"), as.Date("2017-04-11")) ~ 2017)) %>%
+  filter(year %in% AVGING_YEARS) %>%
+  filter(disposition_code != 95 & disposition_code != 98) %>%
+    select(year, port_code, pounds) %>% 
   group_by(year, port_code) %>%
   summarise_all(funs(sum)) %>%
   group_by(port_code) %>%
@@ -378,7 +439,7 @@ pcod_dhbs_sw <- area_o_cod %>%
   select(-c(geoSD))
   
 #to see mean landings as a table
-kable(pcod_dhbs_sw, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
+# kable(pcod_dhbs_sw, col.names = c("Port", "Mean Landings (lb)", "Upper", "Lower"))
 
 #to plot mean landings
 pcod_dhbs_sw_plot <- ggplot(data = pcod_dhbs_sw, aes(y = mean_landed, x = port_code))+
@@ -395,7 +456,7 @@ pcod_dhbs_sw_plot <- ggplot(data = pcod_dhbs_sw, aes(y = mean_landed, x = port_c
   xlab("Port Landed\n")+
   ggtitle("Dutch Harbor Subdistrict Pacific Cod State-Waters")
 
-ggsave(plot = pcod_dhbs_sw_plot, file = paste0("../figures/Region_IV/pcod_dhbs_sw.png"))
+ggsave(plot = pcod_dhbs_sw_plot, file = paste0("figures/Region_IV/pcod_dhbs_sw.png"))
 
 ```
 
@@ -405,7 +466,10 @@ print(pcod_dhbs_sw_plot)
 
 
 ##Pacific Cod Aleutian Islands State-Water Fishery (Area O)
-The Aleutian Islands subdistrict is defined as stat areas between 705200 and 999999. 
+The Aleutian Islands District consists of all state waters of Alaska in the BSAI Area south of the latitude of Cape Sarichef (54°36′ N lat). The Aleutian Islands subdistrict is defined as stat areas between 705200 and 999999.
+
+The fishery opens on January 1 in state waters between 175 degrees W and 178 degrees W. The rest of BS state waters are open to parallel fishing during this time. The entire fishery (west of 170 W long) opens with a federal trigger and changes year to year (generally sometime in February or March). When the entire AI is open, there is no parallel Pacific cod fishing. The AI regulations for openings and closures and vessel length restrictions have changed many times over the years, with the most recent change in 2015/16.
+ 
 ```{r eval=FALSE}
 Stat area = 705200 to 999999
 Management code = SMPC
@@ -449,7 +513,7 @@ pcod_ai_sw_plot <- ggplot(data = pcod_ai_sw, aes(y = mean_landed, x = port_code)
   ggtitle("Aleutian Islands Pacific Cod State-Waters")
 
 
-ggsave(plot = pcod_dhbs_sw_plot, file = paste0("../figures/Region_IV/pcod_ai_sw.png"))
+ggsave(plot = pcod_dhbs_sw_plot, file = paste0("figures/Region_IV/pcod_ai_sw.png"))
 ```
 
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
@@ -469,7 +533,7 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 
 
 ```{r parallel_cod}
-parallel_cod <- read.csv("../data/Region_IV/pacific_cod.csv") 
+parallel_cod <- read.csv("data/Region_IV/pacific_cod.csv") 
 parallel_cod <- parallel_cod %>%   
   mutate(date_landed = mdy(date_landed),
          year = year(date_landed),
@@ -515,7 +579,7 @@ pcod_kod_ll_plot <- ggplot(data = pcod_kod_ll, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("Kodiak Pacific Cod Parallel Fishery")
 
-ggsave(plot = pcod_kod_ll_plot, file = paste0("../figures/Region_IV/pcod_kod_ll.png"))
+ggsave(plot = pcod_kod_ll_plot, file = paste0("figures/Region_IV/pcod_kod_ll.png"))
 ```
 
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
@@ -558,7 +622,7 @@ pcod_chg_ll_plot <- ggplot(data = pcod_chg_ll, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("Chignik Pacific Cod Parallel Fishery")
 
-ggsave(plot = pcod_chg_ll_plot, file = paste0("../figures/Region_IV/pcod_chg_ll.png"))
+ggsave(plot = pcod_chg_ll_plot, file = paste0("figures/Region_IV/pcod_chg_ll.png"))
 ```
 
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
@@ -600,7 +664,7 @@ pcod_sap_ll_plot <- ggplot(data = pcod_sap_ll, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("South Alaska Peninsula Pacific Cod Parallel Fishery")
 
-ggsave(plot = pcod_sap_ll_plot, file = paste0("../figures/Region_IV/pcod_sap_ll.png"))
+ggsave(plot = pcod_sap_ll_plot, file = paste0("figures/Region_IV/pcod_sap_ll.png"))
 ```
 
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
@@ -613,13 +677,13 @@ Species code = 110
 Management program code = OA       
 Stat Area does not equal 705200 to 999999  
 Waters = State  
-Harvest code = 16  
+Harvest code != 80  
 Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)    
 
 ```
  
 ```{r pcod_dhbs_parallel}
-pcod_dhbs_ll <- read.csv("../data/Region_IV/pcod_DHBS.csv") 
+pcod_dhbs_ll <- read.csv("data/Region_IV/pcod_DHBS.csv") 
 
 #subset the dutch harbor pcod subdistrict fishery in state waters
 pcod_dhbs_ll <- area_o_cod %>% 
@@ -659,7 +723,7 @@ pcod_dhbs_ll_plot <- ggplot(data = pcod_dhbs_ll, aes(y = mean_landed, x = port_c
   xlab("Port Landed\n")+
   ggtitle("Dutch Harbor Subdistrict Cod Parallel Fishery")
 
-ggsave(plot = pcod_dhbs_ll_plot, file = paste0("../figures/Region_IV/pcod_dhbs_ll.png"))
+ggsave(plot = pcod_dhbs_ll_plot, file = paste0("figures/Region_IV/pcod_dhbs_ll.png"))
 ```
 
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
@@ -712,7 +776,7 @@ pcod_ai_ll_plot <- ggplot(data = pcod_ai_ll, aes(y = mean_landed, x = port_code)
   xlab("Port Landed\n")+
   ggtitle("Aleutian Islands Cod Parallel Fishery")
 
-ggsave(plot = pcod_ai_ll_plot, file = paste0("../figures/Region_IV/pcod_ai_ll.png"))
+ggsave(plot = pcod_ai_ll_plot, file = paste0("figures/Region_IV/pcod_ai_ll.png"))
 ```
 
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
@@ -721,7 +785,7 @@ print(pcod_ai_ll_plot)
 
 
 #Other Groundfish Fisheries
-##Sablefish (Aleutian Island/Western South Pen) State Waters
+#Sablefish (Aleutian Island/Western South Pen) State Waters
 The state waters allocation of sablefish is 5% of the of the total TAC, which is an open access fishery. All boats fishing either in the open access fishery or in the IFQ/CDQ fishery within State waters must register with the State. For individuals with IFQ/CDQ, harvest from state waters counts against the 5% state TAC and the federal TAC, as well as counting against their IFQ/CDQ. There have been two to three boats, out of fourteen, that participated in the state water open access fishery the past two years (Tracking Data 2017 and 2018). 
 
 There is currently no port sampling for groundfish in Dutch Harbor. The Fisheries Biologist I and tech position that were dedicated to groundfish port sampling was absorbed into the crab port sampling program prior to rationalization in 2005.
@@ -735,7 +799,7 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 
 
 ```{r sablefish}
-sablefish <- read.csv("../data/Region_IV/sablefish_statewaters.csv")
+sablefish <- read.csv("data/Region_IV/sablefish_statewaters.csv")
 
 sablefish <- sablefish %>% 
   filter(waters == "STATE") %>% 
@@ -774,16 +838,65 @@ sablefish_plot <- ggplot(data = sablefish, aes(y = mean_landed, x = port_code))+
   xlab("Port Landed\n")+
   ggtitle("Sablefish (Aleutian Island/Western South Pen) State-Waters")
 
-ggsave(plot = sablefish_plot, file = paste0("../figures/Region_IV/sablefish.png"))
+ggsave(plot = sablefish_plot, file = paste0("figures/Region_IV/sablefish.png"))
 ```
 
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
 print(sablefish_plot)
 ```
 
+##Proportion Sablefish Landed and Sampled
+```{r proportion sablefish}
+
+sablefish <- read.csv("data/Region_IV/sablefish_statewaters.csv")
+
+sablefish_prop <- sablefish %>% 
+    filter(mgmt_area == "K" | 
+           mgmt_area == "L" | 
+           mgmt_area == "M") %>% 
+    mutate(date_landed = mdy(date_landed),
+         year = year(date_landed),
+         fy = ifelse(month(date_landed)>= 7, year + 1, year)) %>% 
+    filter(year %in% AVGING_YEARS) %>% 
+    filter(disposition_code != 95 & disposition_code != 98) %>% 
+    select(year, pounds, mgmt_area) %>% 
+    group_by(year, mgmt_area) %>%
+    summarise_all(funs(sum)) %>% 
+    droplevels() 
+    
+prop_sablefish <- full_join(sablefish_prop, sablefish_samples, by = c("year", "mgmt_area")) 
+
+prop_sablefish <- prop_sablefish %>%  
+  mutate(samples = ifelse(is.na(samples), 0, samples),
+         target = 0) %>%
+  add_tally(pounds) %>% 
+  rename(total_pounds = n) %>% 
+  add_tally(samples) %>% 
+  rename(total_samp = n) %>% 
+  mutate(sampled = samples/total_samp,
+         landed = pounds/total_pounds) %>% 
+  gather(key = "type",
+         value = "proportion",
+         sampled, landed)
+
+prop_sablefish_plot <- ggplot(data = prop_sablefish, 
+                        aes(x = year, y = proportion, color = mgmt_area,shape = type))+
+ geom_point(size = 4)+
+  geom_line(lwd = 1)+
+  ylim(0,1)+
+  xlim(2013,2017)+
+  scale_colour_manual(values = colorRampPalette(PAL)(n_distinct(prop_sablefish$mgmt_area)))+
+  ylab("Proportion Sampled\n")+
+  xlab("Year\n")+
+  ggtitle("Proportion Sablefish Landed and Sampled") 
+ggsave(plot = prop_sablefish_plot, file = paste0("figures/Region_IV/prop_sablefish_samples.png"))
+
+print(prop_sablefish_plot)
+```
+
 
 ##Lingcod (0-200 miles)
-Lingcod are sampled opportunistically as bycatch in other fisheries and no port sampling goals have been defined. There is a Commissioner's permit fishery for longcod, but to date there have been no participants.   
+Lingcod are sampled opportunistically as bycatch in other fisheries and no port sampling goals have been defined. There is a Commissioner's permit fishery for lingcod, but to date there have been no participants.   
 
 ```{r eval=FALSE}
 Groundfish Regulation Management Area = O, M, K, and L      
@@ -796,7 +909,7 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 
 
 ```{r lingcod}
-lingcod <- read.csv("../data/Region_IV/lingcod.csv")
+lingcod <- read.csv("data/Region_IV/lingcod.csv")
 
 lingcod <- lingcod %>% 
   mutate(date_landed = mdy(date_landed),
@@ -835,12 +948,65 @@ lingcod_plot <- ggplot(data = lingcod, aes(y = mean_landed, x = port_code))+
   xlab("Port Landed\n")+
   ggtitle("Lingcod EEZ")
 
-ggsave(plot = lingcod_plot, file = paste0("../figures/Region_IV/lingcod.png"))
+ggsave(plot = lingcod_plot, file = paste0("figures/Region_IV/lingcod.png"))
 ```
 
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
 print(lingcod_plot)
 ```
+
+##Proportion Lingcod Landed and Sampled
+```{r proportion lingcod}
+lingcod <- read.csv("data/Region_IV/lingcod.csv")
+
+lingcod_prop <- lingcod %>% 
+    mutate(date_landed = mdy(date_landed),
+         year = year(date_landed)) %>% 
+    filter(year %in% AVGING_YEARS) %>% 
+    filter(mgmt_area == "O" | 
+           mgmt_area == "M" | 
+           mgmt_area == "K" |
+           mgmt_area == "L") %>% 
+    filter(disposition_code != 95 & disposition_code != 98) %>% 
+    select(year, pounds, mgmt_area) %>% 
+    group_by(year, mgmt_area) %>%
+    summarise_all(funs(sum)) %>% 
+    droplevels() %>% 
+    rename(mgmt_area = mgmt_area) 
+  
+  
+prop_lingcod <- full_join(lingcod_prop, lingcod_samples, by = c("year", "mgmt_area")) 
+
+prop_lingcod <- prop_lingcod %>%  
+  mutate(species = ifelse(is.na(species),"lingcod", species),
+         samples = ifelse(is.na(samples), 0, samples),
+         target = 0) %>% 
+  add_tally(pounds) %>% 
+  rename(total_pounds = n) %>% 
+  add_tally(samples) %>% 
+  rename(total_samp = n) %>% 
+  mutate(sampled = samples/total_samp,
+         landed = pounds/total_pounds) %>%  
+  gather(key = "type",
+         value = "proportion",
+         sampled, landed)
+  
+# kable(prop_lingcod)
+prop_lingcod_plot <- ggplot(data = prop_lingcod,
+                        aes(x = year, y = proportion, color = mgmt_area,shape = type))+
+  geom_point(size = 4)+
+  geom_line(size = 1)+
+  ylim(0, 1)+
+  xlim(2013, 2017)+
+  scale_colour_manual(values = colorRampPalette(PAL)(n_distinct(prop_lingcod$mgmt_area)))+
+  ylab("Proportion Sampled\n")+
+  xlab("Year\n")+
+  ggtitle("Proportion Lingcod Landed and Sampled")
+ggsave(plot = prop_lingcod_plot, file = paste0("figures/Region_IV/prop_lingcod_samples.png"))
+
+print(prop_lingcod_plot)
+```
+
 
 #Black Rockfish (0-200 nmi)
 ```{r eval=FALSE}
@@ -848,7 +1014,7 @@ Disposition codes removed: 95(personal use - not sold) and 98(discard at sea)
 ```
 
 ```{r black rockfish}
-black_rf <- read.csv("../data/Region_IV/black_rockfish.csv")
+black_rf <- read.csv("data/Region_IV/black_rockfish.csv")
 
 black_rf <- black_rf %>% 
   mutate(date_landed = mdy(date_landed),
@@ -867,7 +1033,7 @@ black_samples_plot <- ggplot(data = black_samples)+
   xlab("Year\n")+
   ggtitle("Black Rockfish Port Sampling")
 
-ggsave(plot = black_samples_plot, file = paste0("../figures/Region_IV/black_rockfish_samples.png"))
+ggsave(plot = black_samples_plot, file = paste0("figures/Region_IV/black_rockfish_samples.png"))
 ```
 
 The sampling goal for Kodiak, Chignik, and South Alaska Peninsula is 1000 from each port, indicated by the reference line.
@@ -875,9 +1041,54 @@ The sampling goal for Kodiak, Chignik, and South Alaska Peninsula is 1000 from e
 print(black_samples_plot)
 ```
 
-##Black Rockfish Kodiak (Area K)
+#Proportion Black Rockfish Landed and Sampled
+```{r proportion black rockfish}
+black_rf_prop <- black_rf %>% 
+    filter(mgmt_area == "K" |
+           mgmt_area == "L" |
+           mgmt_area == "M") %>%
+    select(year, pounds, mgmt_area) %>% 
+    group_by(year, mgmt_area) %>%
+    summarise_all(funs(sum)) %>% 
+    droplevels() %>% 
+    rename(mgmt_area = mgmt_area) 
+  
+  
+  
+prop_black_rf <- full_join(black_rf_prop, black_samples, by = c("year", "mgmt_area")) 
 
-Gaps in sampling occur when landings are streched out later in the summer and fall when sampler coverage is lower.
+prop_black_rf <- prop_black_rf %>%  
+  mutate(samples = ifelse(is.na(samples), 0, samples)) %>% 
+  add_tally(pounds) %>% 
+  rename(total_pounds = n) %>% 
+  add_tally(samples) %>% 
+  rename(total_samp = n) %>% 
+  mutate(sampled = samples/total_samp,
+         landed = pounds/total_pounds) %>% 
+  gather(key = "type",
+  value = "proportion",
+  sampled, landed)
+
+# kable(prop_black_rf)
+
+prop_black_plot <- ggplot(data = prop_black_rf,
+                        aes(x = year, y = proportion, color = mgmt_area,shape = type))+
+  geom_point(size = 4)+
+  geom_line(size = 1)+
+  ylim(0, 1)+
+  xlim(2013, 2017)+
+  scale_colour_manual(values = colorRampPalette(PAL)(n_distinct(prop_black_rf$mgmt_area)))+
+  ylab("Proportion Sampled\n")+
+  xlab("Year\n")+
+  ggtitle("Proportion Black Rockfish Landed and Sampled")
+ggsave(plot = prop_black_plot, file = paste0("figures/Region_IV/prop_black_samples.png"))
+
+print(prop_black_plot)
+```
+
+
+##Black Rockfish Kodiak (Area K)
+Gaps in sampling occur when landings are stretched out later in the summer and fall when sampler coverage is lower.  
 ```{r black rockfish kodiak}
 #subset kodiak black rockfish
 black_rf_kod <- black_rf %>% 
@@ -913,7 +1124,7 @@ black_rf_kod_plot <- ggplot(data = black_rf_kod, aes(y = mean_landed, x = port_c
   xlab("Port Landed\n")+
   ggtitle("Kodiak Black Rockfish")
 
-ggsave(plot = black_rf_kod_plot, file = paste0("../figures/Region_IV/black_rf_kod.png"))
+ggsave(plot = black_rf_kod_plot, file = paste0("figures/Region_IV/black_rf_kod.png"))
 
 ```
 
@@ -958,7 +1169,7 @@ black_rf_chg_plot <- ggplot(data = black_rf_chg, aes(y = mean_landed, x = port_c
   xlab("Port Landed\n")+
   ggtitle("Chignik Black Rockfish")
 
-ggsave(plot = black_rf_chg_plot, file = paste0("../figures/Region_IV/black_rf_chg.png"))
+ggsave(plot = black_rf_chg_plot, file = paste0("figures/Region_IV/black_rf_chg.png"))
 
 ```
 
@@ -1004,7 +1215,7 @@ black_rf_sap_plot <- ggplot(data = black_rf_sap, aes(y = mean_landed, x = port_c
   xlab("Port Landed\n")+
   ggtitle("South Alaska Peninsula Black Rockfish")
 
-ggsave(plot = black_rf_sap_plot, file = paste0("../figures/Region_IV/black_rf_sap.png"))
+ggsave(plot = black_rf_sap_plot, file = paste0("figures/Region_IV/black_rf_sap.png"))
 
 ```
 
@@ -1048,7 +1259,7 @@ black_rf_ai_plot <- ggplot(data = black_rf_ai, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("Aleutian Islands Black Rockfish")
 
-ggsave(plot = black_rf_ai_plot, file = paste0("../figures/Region_IV/black_rf_ai.png"))
+ggsave(plot = black_rf_ai_plot, file = paste0("figures/Region_IV/black_rf_ai.png"))
 
 ```
 
@@ -1065,7 +1276,7 @@ Disposition Code removed: 95(personal use - not sold) and 98(discard at sea)
 
 
 ```{r dark rockfish}
-dark_rf <- read.csv("../data/Region_IV/dark_rockfish.csv")
+dark_rf <- read.csv("data/Region_IV/dark_rockfish.csv")
 
 dark_rf <- dark_rf %>% 
   mutate(date_landed = mdy(date_landed),
@@ -1085,15 +1296,64 @@ dark_samples_plot <- ggplot(data = dark_samples)+
   xlab("Year\n")+
   ggtitle("Dark Rockfish Port Sampling")
 
-ggsave(plot = black_samples_plot, file = paste0("../figures/Region_IV/dark_rockfish_samples.png"))
+ggsave(plot = black_samples_plot, file = paste0("figures/Region_IV/dark_rockfish_samples.png"))
 ```
 
-The the reference line at 500 indicates the sampling goal for Kodak, Chignik, and the South Alaska Peninsula.
+The reference line at 500 indicates the sampling goal for Kodak, Chignik, and the South Alaska Peninsula.  
+
 ```{r fig.width = 5.5, fig.height = 3.5, fig.align = "center"}
 print(dark_samples_plot)
 ```
 
+#Proportion Dark Rockfish Landed and Sampled
+```{r proportion dark rockfish}
+dark_rf_prop <- dark_rf %>% 
+    filter(mgmt_area == "K" |
+           mgmt_area == "L" |
+           mgmt_area == "M") %>%
+    select(year, pounds, mgmt_area) %>% 
+    group_by(year, mgmt_area) %>%
+    summarise_all(funs(sum)) %>% 
+    droplevels() %>% 
+    rename(mgmt_area = mgmt_area) 
+  
+  
+  
+prop_dark_rf <- full_join(dark_rf_prop, dark_samples, by = c("year", "mgmt_area")) 
+
+prop_dark_rf <- prop_dark_rf %>%  
+  mutate(samples = ifelse(is.na(samples), 0, samples),
+         target = ifelse(is.na(target), 500, target)) %>% 
+  add_tally(pounds) %>% 
+  rename(total_pounds = n) %>% 
+  add_tally(samples) %>% 
+  rename(total_samp = n) %>% 
+  mutate(sampled = samples/total_samp,
+         landed = pounds/total_pounds) %>% 
+  gather(key = "type",
+  value = "proportion",
+  sampled, landed)
+
+# kable(prop_dark_rf)
+
+prop_dark_plot <- ggplot(data = prop_dark_rf,
+                        aes(x = year, y = proportion, color = mgmt_area,shape = type))+
+  geom_point(size = 4)+
+  geom_line(size = 1)+
+  ylim(0, 1)+
+  xlim(2013, 2017)+
+  scale_colour_manual(values = colorRampPalette(PAL)(n_distinct(prop_dark_rf$mgmt_area)))+
+  ylab("Proportion Sampled\n")+
+  xlab("Year\n")+
+  ggtitle("Proportion Dark Rockfish Landed and Sampled")
+ggsave(plot = prop_dark_plot, file = paste0("figures/Region_IV/prop_dark_samples.png"))
+
+print(prop_dark_plot)
+```
+
+
 ##Dark Rockfish - Kodiak (Area K)
+Kodiak dark rockfish are caught as bycatch in other fishery, with no directed fishery, reducing the ability to meet sampling objectives because of the sporadic nature of landings. This area also has low participation in the rockfish fisheries, reducing the likelihood of meeting sampling objectives.
 ```{r dark rockfish kodiak}
 #subset kodiak dark rockfish
 dark_rf_kod <- dark_rf %>% 
@@ -1129,7 +1389,7 @@ dark_rf_kod_plot <- ggplot(data = dark_rf_kod, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("Kodiak Dark Rockfish")
 
-ggsave(plot = dark_rf_kod_plot, file = paste0("../figures/Region_IV/dark_rf_kod.png"))
+ggsave(plot = dark_rf_kod_plot, file = paste0("figures/Region_IV/dark_rf_kod.png"))
 
 ```
 
@@ -1175,7 +1435,7 @@ dark_rf_chg_plot <- ggplot(data = dark_rf_chg, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("Chignik Dark Rockfish")
 
-ggsave(plot = dark_rf_chg_plot, file = paste0("../figures/Region_IV/dark_rf_chg.png"))
+ggsave(plot = dark_rf_chg_plot, file = paste0("figures/Region_IV/dark_rf_chg.png"))
 
 ```
 
@@ -1221,7 +1481,7 @@ dark_rf_sap_plot <- ggplot(data = dark_rf_sap, aes(y = mean_landed, x = port_cod
   xlab("Port Landed\n")+
   ggtitle("South Alaska Peninsula Dark Rockfish")
 
-ggsave(plot = dark_rf_sap_plot, file = paste0("../figures/Region_IV/dark_rf_chg.png"))
+ggsave(plot = dark_rf_sap_plot, file = paste0("figures/Region_IV/dark_rf_chg.png"))
 
 ```
 
@@ -1267,7 +1527,7 @@ dark_rf_ai_plot <- ggplot(data = dark_rf_sap, aes(y = mean_landed, x = port_code
   xlab("Port Landed\n")+
   ggtitle("Aleutian Islands Dark Rockfish")
 
-ggsave(plot = dark_rf_ai_plot, file = paste0("../figures/Region_IV/dark_rf_ai.png"))
+ggsave(plot = dark_rf_ai_plot, file = paste0("figures/Region_IV/dark_rf_ai.png"))
 
 ```
 
@@ -1280,7 +1540,7 @@ There is no state water fishery for Atka mackerel, it is fully under federal jur
 
 
 ```{r Atka mackerel, eval=FALSE}
-atka_m <- read.csv("../data/Region_IV/atka_mackerel_state_waters.csv")
+atka_m <- read.csv("data/Region_IV/atka_mackerel_state_waters.csv")
 
 atka_m <- atka_m %>% 
   mutate(date_landed = mdy(date_landed),
@@ -1326,5 +1586,5 @@ Barbeaux, S., Aydin, K., Fissel, B., Hosman, K., Palsson W., Shotwell, K., Yang,
 
 Carlile, D. (2005). An assessment of age determination needs and sample sizes for groundfish fisheries managed by the State of Alaska. *Special Publication* No. 05-12. pp. 1-30. Alaska Department of Fish and Game, Juneau, AK.
 
-Kirkwood, T.B.L. (1979).Geometric Means and Measures of Dispersion. *Biometrics, 35:4*.pp. 908-909. 
+Kirkwood, T.B.L. (1979). Geometric Means and Measures of Dispersion. *Biometrics, 35:4*. pp. 908-909. 
 
